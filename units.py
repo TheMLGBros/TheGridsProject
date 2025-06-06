@@ -6,7 +6,9 @@ from entities import GameEntity
 
 class Unit(GameEntity):
     def __init__(self, row, col, unit_type, owner, health, attack, move_range, attack_range, cost):
-        super().__init__(row, col)
+        color = arcade.color.BLUE if owner == 1 else arcade.color.RED
+        sprite = arcade.SpriteCircle(CELL_SIZE // 2 - 4, color, soft=True)
+        super().__init__(row, col, sprite)
         self.unit_type = unit_type
         self.owner = owner  # e.g., player 1 or 2
         self.health = health
@@ -29,19 +31,9 @@ class Unit(GameEntity):
         self.move_queue = []
 
     def draw(self):
-        color = arcade.color.BLUE if self.owner == 1 else arcade.color.RED
-        x = self.pixel_x
-        y = self.pixel_y
-        arcade.draw_circle_filled(x, y, CELL_SIZE / 2 - 4, color)
-        arcade.draw_text(
-            self.unit_type,
-            x,
-            y,
-            arcade.color.WHITE,
-            10,
-            anchor_x="center",
-            anchor_y="center",
-        )
+        self.sprite.center_x = self.pixel_x
+        self.sprite.center_y = self.pixel_y
+        self.sprite.draw()
 
     def start_move(self, path):
         self.move_queue = path
@@ -70,6 +62,8 @@ class Unit(GameEntity):
                 self.col = int(self.target_pixel_x // CELL_SIZE)
                 if self.move_queue:
                     self._begin_next_step()
+        self.sprite.center_x = self.pixel_x
+        self.sprite.center_y = self.pixel_y
 
 class Warrior(Unit):
     def __init__(self, row, col, owner):
