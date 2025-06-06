@@ -29,6 +29,7 @@ class GridsGame(arcade.Window):
         self.selected_unit = None
         self.selected_card_index = None
         self.move_squares = []
+        self.attack_targets = []
 
         # UI element rectangles
         self.end_turn_button = {
@@ -76,11 +77,29 @@ class GridsGame(arcade.Window):
             print("Move not possible!")
             return False
 
-        for step in path:
-            unit.row, unit.col = step
+        unit.start_move(path)
         self.current_action_points -= 1
-        print(f"{unit.unit_type} moved to ({unit.row}, {unit.col}). AP left: {self.current_action_points}")
+        final_row, final_col = path[-1]
+        print(
+            f"{unit.unit_type} moved to ({final_row}, {final_col}). AP left: {self.current_action_points}"
+        )
         return True
+
+    def attack_unit(self, attacker, target):
+        if target.health <= 0:
+            return
+        target.health -= attacker.attack
+        print(
+            f"{attacker.unit_type} attacked {target.unit_type} for {attacker.attack} damage. Target health: {target.health}"
+        )
+        # Knock back one square if possible
+        dr = target.row - attacker.row
+        dc = target.col - attacker.col
+        knock_row = target.row + (1 if dr > 0 else -1 if dr < 0 else 0)
+        knock_col = target.col + (1 if dc > 0 else -1 if dc < 0 else 0)
+        if 0 <= knock_row < ROWS and 0 <= knock_col < COLUMNS:
+            if not any(u.row == knock_row and u.col == knock_col for u in self.units):
+                target.start_move([(knock_row, knock_col)])
 
     def end_turn(self):
         print(f"Ending turn for Player {self.current_player}.")
@@ -125,6 +144,20 @@ class GridsGame(arcade.Window):
                 arcade.draw_rect_outline(cell_rect, color, border_width=2)
                 if (row, col) in self.move_squares:
                     arcade.draw_rect_filled(cell_rect, color)
+        for target in self.attack_targets:
+            x = target.col * CELL_SIZE + CELL_SIZE / 2
+            y = target.row * CELL_SIZE + CELL_SIZE / 2
+            rect = arcade.Rect(
+                left=x - CELL_SIZE / 2,
+                right=x + CELL_SIZE / 2,
+                bottom=y - CELL_SIZE / 2,
+                top=y + CELL_SIZE / 2,
+                x=x,
+                y=y,
+                width=CELL_SIZE,
+                height=CELL_SIZE,
+            )
+            arcade.draw_rect_filled(rect, arcade.color.DARK_RED)
         for unit in self.units:
             unit.draw()
         panel_x = GRID_WIDTH + UI_PANEL_WIDTH / 2
@@ -240,19 +273,34 @@ class GridsGame(arcade.Window):
                 return
 
             for unit in self.units:
-                if unit.row == row and unit.col == col and unit.owner == self.current_player:
-                    self.selected_unit = unit
-                    self.move_squares = self.get_valid_move_squares(unit)
-                    print(f"Selected unit: {unit.unit_type} (Owner: {unit.owner})")
-                    return
+                if unit.row == row and unit.col == col:
+                    if unit.owner == self.current_player:
+                        self.selected_unit = unit
+                        self.move_squares = self.get_valid_move_squares(unit)
+                        self.attack_targets = self.get_attackable_units(unit)
+                        print(
+                            f"Selected unit: {unit.unit_type} (Owner: {unit.owner})"
+                        )
+                        return
+                    elif (
+                        self.selected_unit
+                        and unit in self.attack_targets
+                        and self.selected_unit.owner == self.current_player
+                    ):
+                        self.attack_unit(self.selected_unit, unit)
+                        self.attack_targets = []
+                        self.move_squares = []
+                        self.selected_unit = None
+                        return
             if self.selected_unit and (row, col) in self.move_squares:
                 self.move_unit(self.selected_unit, row, col)
+                self.attack_targets = self.get_attackable_units(self.selected_unit)
                 self.move_squares = []
-                self.selected_unit = None
+                return
         else:
             self.selected_unit = None
             self.move_squares = []
-
+            
     def get_clicked_cell(self, x, y):
         if x < 0 or x >= GRID_WIDTH or y < 0 or y >= GRID_HEIGHT:
             return None
@@ -270,6 +318,15 @@ class GridsGame(arcade.Window):
                 if path and len(path) <= unit.move_range:
                     valid_moves.append((row, col))
         return valid_moves
+
+    def get_attackable_units(self, unit):
+        targets = []
+        for other in self.units:
+            if other.owner != unit.owner:
+                dist = self.manhattan_distance((unit.row, unit.col), (other.row, other.col))
+                if dist <= unit.attack_range:
+                    targets.append(other)
+        return targets
 
     def a_star_pathfinding(self, start, goal):
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
@@ -308,10 +365,12 @@ class GridsGame(arcade.Window):
         for unit in self.units:
             if unit.frozen_turns > 0:
                 unit.frozen_turns -= 1
+            unit.update_animation(delta_time)
         if self.player1BlockedTurnsTimer > 0:
             self.player1BlockedTurnsTimer -= 1
         if self.player2BlockedTurnsTimer > 0:
             self.player2BlockedTurnsTimer -= 1
+        self.units = [u for u in self.units if u.health > 0]
 
 
 def main():
