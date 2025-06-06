@@ -147,7 +147,6 @@ class GridsGame(arcade.Window):
         arcade.draw_text("End Turn", self.end_turn_button['center_x'] - 40, self.end_turn_button['center_y'] - 7,
                          arcade.color.WHITE, 12)
         arcade.draw_rectangle_filled(self.draw_card_button['center_x'], self.draw_card_button['center_y'],
-                                     main
                                      self.draw_card_button['width'], self.draw_card_button['height'], arcade.color.GRAY)
         arcade.draw_text("Draw Card", self.draw_card_button['center_x'] - 45, self.draw_card_button['center_y'] - 7,
                          arcade.color.WHITE, 12)
