@@ -124,7 +124,7 @@ class GridsGame(arcade.Window):
                 )
                 arcade.draw_rect_outline(cell_rect, color, border_width=2)
                 if (row, col) in self.move_squares:
-                    arcade.draw_rect_filled(cell_rect, color)
+                    arcade.draw_rectangle_filled(cell_rect, color)
         for unit in self.units:
             unit.draw()
         panel_x = GRID_WIDTH + UI_PANEL_WIDTH / 2
@@ -139,11 +139,11 @@ class GridsGame(arcade.Window):
         # Draw buttons
 
         arcade.draw_rectangle_filled(self.end_turn_button['center_x'], self.end_turn_button['center_y'],
-                                     self.end_turn_button['width'], self.end_turn_button['height'], arcade.color.GRAY)
+                                self.end_turn_button['width'], self.end_turn_button['height'], arcade.color.GRAY)
         arcade.draw_text("End Turn", self.end_turn_button['center_x'] - 40, self.end_turn_button['center_y'] - 7,
                          arcade.color.WHITE, 12)
         arcade.draw_rectangle_filled(self.draw_card_button['center_x'], self.draw_card_button['center_y'],
-                                     self.draw_card_button['width'], self.draw_card_button['height'], arcade.color.GRAY)
+                                self.draw_card_button['width'], self.draw_card_button['height'], arcade.color.GRAY)
         arcade.draw_text("Draw Card", self.draw_card_button['center_x'] - 45, self.draw_card_button['center_y'] - 7,
                          arcade.color.WHITE, 12)
 
