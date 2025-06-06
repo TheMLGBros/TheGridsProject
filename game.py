@@ -361,7 +361,7 @@ class GridsGame(arcade.Window):
     def manhattan_distance(self, cell1, cell2):
         return abs(cell1[0] - cell2[0]) + abs(cell1[1] - cell2[1])
 
-    def update(self, delta_time):
+    def on_update(self, delta_time):
         for unit in self.units:
             if unit.frozen_turns > 0:
                 unit.frozen_turns -= 1
