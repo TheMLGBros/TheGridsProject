@@ -128,7 +128,8 @@ class GridsGame(arcade.Window):
         for unit in self.units:
             unit.draw()
         panel_x = GRID_WIDTH + UI_PANEL_WIDTH / 2
-        arcade.draw_xywh_rectangle_filled(
+
+        arcade.draw_lbwh_rectangle_filled(
             GRID_WIDTH,
             0,
             UI_PANEL_WIDTH,
@@ -138,7 +139,8 @@ class GridsGame(arcade.Window):
         arcade.draw_text(f"Player {self.current_player} - AP: {self.current_action_points}", GRID_WIDTH + 10, SCREEN_HEIGHT - 30, arcade.color.WHITE, 14)
         # Draw buttons
 
-        arcade.draw_xywh_rectangle_filled(
+        arcade.draw_lbwh_rectangle_filled(
+
             self.end_turn_button['center_x'] - self.end_turn_button['width'] / 2,
             self.end_turn_button['center_y'] - self.end_turn_button['height'] / 2,
             self.end_turn_button['width'],
@@ -154,7 +156,7 @@ class GridsGame(arcade.Window):
             anchor_x="center",
             anchor_y="center",
         )
-        arcade.draw_xywh_rectangle_filled(
+        arcade.draw_lbwh_rectangle_filled(
             self.draw_card_button['center_x'] - self.draw_card_button['width'] / 2,
             self.draw_card_button['center_y'] - self.draw_card_button['height'] / 2,
             self.draw_card_button['width'],
@@ -184,7 +186,7 @@ class GridsGame(arcade.Window):
             }
             color = arcade.color.LIGHT_GREEN if idx == self.selected_card_index else arcade.color.DARK_SLATE_GRAY
 
-            arcade.draw_xywh_rectangle_filled(
+            arcade.draw_lbwh_rectangle_filled(
                 rect['center_x'] - rect['width'] / 2,
                 rect['center_y'] - rect['height'] / 2,
                 rect['width'],
