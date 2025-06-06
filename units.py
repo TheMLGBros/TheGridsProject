@@ -5,9 +5,19 @@ from constants import CELL_SIZE
 from entities import GameEntity
 
 class Unit(GameEntity):
+    SPRITE_PATHS = {
+        "Commander": "sprites/units/commander.png",
+        "Warrior": "sprites/units/warrior.png",
+        "Archer": "sprites/units/archer.png",
+        "Healer": "sprites/units/healer.png",
+        "Trebuchet": "sprites/units/trebuchet.png",
+        "Viking": "sprites/units/viking.png",
+    }
     def __init__(self, row, col, unit_type, owner, health, attack, move_range, attack_range, cost):
         color = arcade.color.BLUE if owner == 1 else arcade.color.RED
-        sprite = arcade.SpriteCircle(CELL_SIZE // 2 - 4, color, soft=True)
+        sprite_path = self.SPRITE_PATHS.get(unit_type, "sprites/units/commander.png")
+        sprite = arcade.Sprite(sprite_path, scale=CELL_SIZE / 64)
+        sprite.color = color
         super().__init__(row, col, sprite)
         self.unit_type = unit_type
         self.owner = owner  # e.g., player 1 or 2
@@ -31,21 +41,10 @@ class Unit(GameEntity):
         self.move_queue = []
 
     def draw(self):
-        """Render the unit.
-
-        ``arcade.Sprite`` no longer exposes a ``draw`` method in recent
-        versions of the library. To keep the original visuals we draw a filled
-        circle matching the sprite's appearance.
-        """
+        """Render the unit sprite."""
         self.sprite.center_x = self.pixel_x
         self.sprite.center_y = self.pixel_y
-        radius = self.sprite.width / 2
-        arcade.draw_circle_filled(
-            self.sprite.center_x,
-            self.sprite.center_y,
-            radius,
-            self.sprite.color,
-        )
+        arcade.draw_sprite(self.sprite)
 
     def start_move(self, path):
         self.move_queue = path
