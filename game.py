@@ -128,7 +128,7 @@ class GridsGame(arcade.Window):
         for unit in self.units:
             unit.draw()
         panel_x = GRID_WIDTH + UI_PANEL_WIDTH / 2
-        arcade.draw_rectangle_filled(
+        arcade.draw_rect_filled(
             panel_x,
             SCREEN_HEIGHT / 2,
             UI_PANEL_WIDTH,
@@ -160,7 +160,7 @@ class GridsGame(arcade.Window):
             }
             color = arcade.color.LIGHT_GREEN if idx == self.selected_card_index else arcade.color.DARK_SLATE_GRAY
 
-            arcade.draw_rectangle_filled(rect['center_x'], rect['center_y'], rect['width'], rect['height'], color)
+            arcade.draw_rect_filled(rect['center_x'], rect['center_y'], rect['width'], rect['height'], color)
             text_x = rect['center_x'] - rect['width'] / 2 + 5
             text_y = rect['center_y'] - 8
             arcade.draw_text(f"{idx}: {card.name} (Cost: {card.cost})", text_x, text_y, arcade.color.WHITE, 12)
