@@ -124,11 +124,11 @@ class GridsGame(arcade.Window):
                 )
                 arcade.draw_rect_outline(cell_rect, color, border_width=2)
                 if (row, col) in self.move_squares:
-                    arcade.draw_rectangle_filled(cell_rect, color)
+                    arcade.draw_rect_filled(cell_rect, color)
         for unit in self.units:
             unit.draw()
         panel_x = GRID_WIDTH + UI_PANEL_WIDTH / 2
-        arcade.draw_rect_filled(
+        arcade.draw_lbwh_rectangle_filled(
             panel_x,
             SCREEN_HEIGHT / 2,
             UI_PANEL_WIDTH,
@@ -138,11 +138,11 @@ class GridsGame(arcade.Window):
         arcade.draw_text(f"Player {self.current_player} - AP: {self.current_action_points}", GRID_WIDTH + 10, SCREEN_HEIGHT - 30, arcade.color.WHITE, 14)
         # Draw buttons
 
-        arcade.draw_rectangle_filled(self.end_turn_button['center_x'], self.end_turn_button['center_y'],
+        arcade.draw_lbwh_rectangle_filled(self.end_turn_button['center_x'], self.end_turn_button['center_y'],
                                 self.end_turn_button['width'], self.end_turn_button['height'], arcade.color.GRAY)
         arcade.draw_text("End Turn", self.end_turn_button['center_x'] - 40, self.end_turn_button['center_y'] - 7,
                          arcade.color.WHITE, 12)
-        arcade.draw_rectangle_filled(self.draw_card_button['center_x'], self.draw_card_button['center_y'],
+        arcade.draw_lbwh_rectangle_filled(self.draw_card_button['center_x'], self.draw_card_button['center_y'],
                                 self.draw_card_button['width'], self.draw_card_button['height'], arcade.color.GRAY)
         arcade.draw_text("Draw Card", self.draw_card_button['center_x'] - 45, self.draw_card_button['center_y'] - 7,
                          arcade.color.WHITE, 12)
@@ -160,7 +160,7 @@ class GridsGame(arcade.Window):
             }
             color = arcade.color.LIGHT_GREEN if idx == self.selected_card_index else arcade.color.DARK_SLATE_GRAY
 
-            arcade.draw_rect_filled(rect['center_x'], rect['center_y'], rect['width'], rect['height'], color)
+            arcade.draw_lbwh_rectangle_filled(rect['center_x'], rect['center_y'], rect['width'], rect['height'], color)
             text_x = rect['center_x'] - rect['width'] / 2 + 5
             text_y = rect['center_y'] - 8
             arcade.draw_text(f"{idx}: {card.name} (Cost: {card.cost})", text_x, text_y, arcade.color.WHITE, 12)
