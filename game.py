@@ -27,10 +27,33 @@ class GridsGame(arcade.Window):
         self.spell_hand = []
 
         self.selected_unit = None
+        self.selected_card_index = None
         self.move_squares = []
+
+        # UI element rectangles
+        self.end_turn_button = {
+            'center_x': GRID_WIDTH + UI_PANEL_WIDTH / 2,
+            'center_y': 40,
+            'width': 120,
+            'height': 30,
+        }
+        self.draw_card_button = {
+            'center_x': GRID_WIDTH + UI_PANEL_WIDTH / 2,
+            'center_y': 80,
+            'width': 120,
+            'height': 30,
+        }
+        self.card_rects = []
 
         self.init_board()
         self.draw_cards(self.spell_deck, self.spell_hand, num=3)
+
+    def point_in_rect(self, x, y, rect):
+        left = rect['center_x'] - rect['width'] / 2
+        right = rect['center_x'] + rect['width'] / 2
+        bottom = rect['center_y'] - rect['height'] / 2
+        top = rect['center_y'] + rect['height'] / 2
+        return left <= x <= right and bottom <= y <= top
 
     def init_board(self):
         self.units.append(Unit(ROWS // 2, 0, "Commander", owner=1, health=300, attack=20, move_range=2, attack_range=1, cost=1))
@@ -117,18 +140,69 @@ class GridsGame(arcade.Window):
         )
         arcade.draw_rect_filled(panel_rect, arcade.color.DARK_SLATE_GRAY)
         arcade.draw_text(f"Player {self.current_player} - AP: {self.current_action_points}", GRID_WIDTH + 10, SCREEN_HEIGHT - 30, arcade.color.WHITE, 14)
-        y_pos = SCREEN_HEIGHT - 60
-        arcade.draw_text("Spell Hand:", GRID_WIDTH + 10, y_pos, arcade.color.WHITE, 12)
-        y_pos -= 20
+        # Draw buttons
+        arcade.draw_rectangle_filled(self.end_turn_button['center_x'], self.end_turn_button['center_y'],
+                                     self.end_turn_button['width'], self.end_turn_button['height'], arcade.color.GRAY)
+        arcade.draw_text("End Turn", self.end_turn_button['center_x'] - 40, self.end_turn_button['center_y'] - 7,
+                         arcade.color.WHITE, 12)
+        arcade.draw_rectangle_filled(self.draw_card_button['center_x'], self.draw_card_button['center_y'],
+                                     self.draw_card_button['width'], self.draw_card_button['height'], arcade.color.GRAY)
+        arcade.draw_text("Draw Card", self.draw_card_button['center_x'] - 45, self.draw_card_button['center_y'] - 7,
+                         arcade.color.WHITE, 12)
+
+        # Draw spell hand
+        y_pos = SCREEN_HEIGHT - 100
+        arcade.draw_text("Spell Hand:", GRID_WIDTH + 10, y_pos + 20, arcade.color.WHITE, 12)
+        self.card_rects = []
         for idx, card in enumerate(self.spell_hand):
-            arcade.draw_text(f"{idx}: {card.name} (Cost: {card.cost})", GRID_WIDTH + 10, y_pos - idx * 20, arcade.color.WHITE, 12)
+            rect = {
+                'center_x': panel_x,
+                'center_y': y_pos - idx * 30,
+                'width': UI_PANEL_WIDTH - 20,
+                'height': 24,
+            }
+            color = arcade.color.LIGHT_GREEN if idx == self.selected_card_index else arcade.color.DARK_SLATE_GRAY
+            arcade.draw_rectangle_filled(rect['center_x'], rect['center_y'], rect['width'], rect['height'], color)
+            text_x = rect['center_x'] - rect['width'] / 2 + 5
+            text_y = rect['center_y'] - 8
+            arcade.draw_text(f"{idx}: {card.name} (Cost: {card.cost})", text_x, text_y, arcade.color.WHITE, 12)
+            self.card_rects.append(rect)
 
     def on_mouse_press(self, x, y, button, modifiers):
         print(f"Mouse pressed at ({x}, {y})")
+        # Click within UI panel
+        if x >= GRID_WIDTH:
+            if self.point_in_rect(x, y, self.end_turn_button):
+                self.end_turn()
+                return
+            if self.point_in_rect(x, y, self.draw_card_button):
+                self.draw_cards(self.spell_deck, self.spell_hand, num=1)
+                return
+            for idx, rect in enumerate(self.card_rects):
+                if self.point_in_rect(x, y, rect):
+                    self.selected_card_index = idx
+                    print(f"Selected card: {self.spell_hand[idx].name}")
+                    return
+            return
+
         cell = self.get_clicked_cell(x, y)
         if cell:
             row, col = cell
             print(f"Clicked on cell: ({row}, {col})")
+
+            # If a card is selected, play it on this target
+            if self.selected_card_index is not None and self.selected_card_index < len(self.spell_hand):
+                target_unit = None
+                for unit in self.units:
+                    if unit.row == row and unit.col == col:
+                        target_unit = unit
+                        break
+                target = target_unit if target_unit else (row, col)
+                card = self.spell_hand[self.selected_card_index]
+                self.play_card(card, target)
+                self.selected_card_index = None
+                return
+
             for unit in self.units:
                 if unit.row == row and unit.col == col and unit.owner == self.current_player:
                     self.selected_unit = unit
