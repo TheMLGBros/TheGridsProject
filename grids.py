@@ -15,8 +15,6 @@ CELL_SIZE = 64
 GRID_WIDTH = COLUMNS * CELL_SIZE
 GRID_HEIGHT = ROWS * CELL_SIZE
 UI_PANEL_WIDTH = SCREEN_WIDTH - GRID_WIDTH
-player1BlockedTurnsTimer = 0
-player2BlockedTurnsTimer = 0
 
 # -------------------------
 # Base Classes for Game Entities
@@ -150,12 +148,13 @@ class ActionBlock(Card):
         super().__init__("Action Block", cost=3, description="locks 3 of an enemy's action for 4 turn.")
     
     def play(self, game, target):
-        if(target.owner == 1):
-            player1BlockedTurnsTimer = 3
-            print("player 1 actions are blocked for 3 turns.")
-        else:
-            player2BlockedTurnsTimer = 3
-            print("player 2 actions are blocked for 3 turns.")
+        if isinstance(target, Unit):
+            if target.owner == 1:
+                game.player1BlockedTurnsTimer = 3
+                print("player 1 actions are blocked for 3 turns.")
+            else:
+                game.player2BlockedTurnsTimer = 3
+                print("player 2 actions are blocked for 3 turns.")
 
 
 # -------------------------
@@ -174,6 +173,8 @@ class GridsGame(arcade.Window):
         # Turn-based system
         self.current_action_points = 7
         self.current_player = 1  # 1 or 2
+        self.player1BlockedTurnsTimer = 0
+        self.player2BlockedTurnsTimer = 0
 
         # Card decks and hands (spell cards for this prototype)
         self.unit_deck = []   # Can be populated later
@@ -446,11 +447,11 @@ class GridsGame(arcade.Window):
             if unit.frozen_turns > 0:
                 unit.frozen_turns -= 1
         
-        if player1BlockedTurnsTimer > 0:
-            player1BlockedTurnsTimer = player1BlockedTurnsTimer - 1
-        
-        if player2BlockedTurnsTimer > 0:
-            player2BlockedTurnsTimer = player2BlockedTurnsTimer - 1
+        if self.player1BlockedTurnsTimer > 0:
+            self.player1BlockedTurnsTimer -= 1
+
+        if self.player2BlockedTurnsTimer > 0:
+            self.player2BlockedTurnsTimer -= 1
         
 
 
