@@ -31,9 +31,21 @@ class Unit(GameEntity):
         self.move_queue = []
 
     def draw(self):
+        """Render the unit.
+
+        ``arcade.Sprite`` no longer exposes a ``draw`` method in recent
+        versions of the library. To keep the original visuals we draw a filled
+        circle matching the sprite's appearance.
+        """
         self.sprite.center_x = self.pixel_x
         self.sprite.center_y = self.pixel_y
-        self.sprite.draw()
+        radius = self.sprite.width / 2
+        arcade.draw_circle_filled(
+            self.sprite.center_x,
+            self.sprite.center_y,
+            radius,
+            self.sprite.color,
+        )
 
     def start_move(self, path):
         self.move_queue = path
