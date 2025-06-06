@@ -128,17 +128,13 @@ class GridsGame(arcade.Window):
         for unit in self.units:
             unit.draw()
         panel_x = GRID_WIDTH + UI_PANEL_WIDTH / 2
-        panel_rect = arcade.Rect(
-            left=panel_x - UI_PANEL_WIDTH / 2,
-            right=panel_x + UI_PANEL_WIDTH / 2,
-            bottom=0,
-            top=SCREEN_HEIGHT,
-            x=panel_x,
-            y=SCREEN_HEIGHT / 2,
-            width=UI_PANEL_WIDTH,
-            height=SCREEN_HEIGHT,
+        arcade.draw_rectangle_filled(
+            panel_x,
+            SCREEN_HEIGHT / 2,
+            UI_PANEL_WIDTH,
+            SCREEN_HEIGHT,
+            arcade.color.DARK_SLATE_GRAY,
         )
-        arcade.draw_rect_filled(panel_rect, arcade.color.DARK_SLATE_GRAY)
         arcade.draw_text(f"Player {self.current_player} - AP: {self.current_action_points}", GRID_WIDTH + 10, SCREEN_HEIGHT - 30, arcade.color.WHITE, 14)
         # Draw buttons
 
