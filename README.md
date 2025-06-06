@@ -4,6 +4,8 @@ This repository contains a small arcade-based prototype. Automated tests have be
 
 The project requires the real [`arcade`](https://api.arcade.academy/) package. Install it along with `pytest` to run the game or the unit tests.
 
+Unit, item and UI images are stored under the `sprites/` directory. Each type has its own subfolder to keep assets organized.
+
 ## Running the Game
 
 To start the game, run the `grids.py` script:
