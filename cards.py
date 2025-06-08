@@ -1,4 +1,5 @@
 from units import Unit
+from constants import CELL_SIZE
 
 class Card:
     def __init__(self, name, cost, description):
@@ -62,3 +63,36 @@ class ActionBlock(Card):
             else:
                 game.player2BlockedTurnsTimer = 3
                 print("player 2 actions are blocked for 3 turns.")
+
+
+class Teleport(Card):
+    def __init__(self):
+        super().__init__(
+            "Teleport",
+            cost=4,
+            description="Teleport a friendly unit to any square on the board.",
+        )
+
+    def play(self, game, target):
+        unit = game.selected_unit
+        if not unit or unit.owner != game.current_player:
+            print("No friendly unit selected for teleport.")
+            return
+
+        if isinstance(target, Unit):
+            dest_row, dest_col = target.row, target.col
+        else:
+            dest_row, dest_col = target
+
+        if any(u.row == dest_row and u.col == dest_col for u in game.units):
+            print("Destination occupied!")
+            return
+
+        unit.row = dest_row
+        unit.col = dest_col
+        unit.pixel_x = dest_col * CELL_SIZE + CELL_SIZE / 2
+        unit.pixel_y = dest_row * CELL_SIZE + CELL_SIZE / 2
+        unit.target_pixel_x = unit.pixel_x
+        unit.target_pixel_y = unit.pixel_y
+        unit.move_queue = []
+        print(f"Teleported {unit.unit_type} to ({dest_row}, {dest_col}).")
