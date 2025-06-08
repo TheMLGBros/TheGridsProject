@@ -50,3 +50,10 @@ def test_teleport_spell(game):
     game.play_card(teleport, dest)
     assert unit.row == dest[0] and unit.col == dest[1]
     assert game.current_action_points == starting_ap - teleport.cost
+
+
+def test_draw_unit_button(game):
+    initial = len(game.unit_hand)
+    button = game.draw_unit_button
+    game.on_mouse_press(button['center_x'], button['center_y'], 1, None)
+    assert len(game.unit_hand) == initial + 1

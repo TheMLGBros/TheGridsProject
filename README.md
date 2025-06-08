@@ -15,6 +15,7 @@ python grids.py
 ```
 
 This launches a window where you can move units, play spell cards and end your turn using the on-screen buttons.
+There are separate buttons for drawing spells and units into your hand.
 
 
 ## Running Tests
