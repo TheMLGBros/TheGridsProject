@@ -5,7 +5,14 @@ import random
 from constants import (SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE, ROWS, COLUMNS,
                        CELL_SIZE, GRID_WIDTH, GRID_HEIGHT, UI_PANEL_WIDTH)
 from units import (Unit, Warrior, Archer, Healer, Trebuchet, Viking)
-from cards import (Fireball, Freeze, StrengthUp, MeteoriteStrike, ActionBlock)
+from cards import (
+    Fireball,
+    Freeze,
+    StrengthUp,
+    MeteoriteStrike,
+    ActionBlock,
+    Teleport,
+)
 
 class GridsGame(arcade.Window):
     def __init__(self):
@@ -22,7 +29,14 @@ class GridsGame(arcade.Window):
         self.player2BlockedTurnsTimer = 0
 
         self.unit_deck = []
-        self.spell_deck = [Fireball(), Freeze(), StrengthUp(), MeteoriteStrike(), ActionBlock()]
+        self.spell_deck = [
+            Fireball(),
+            Freeze(),
+            StrengthUp(),
+            MeteoriteStrike(),
+            ActionBlock(),
+            Teleport(),
+        ]
         self.unit_hand = []
         self.spell_hand = []
 
