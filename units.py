@@ -38,6 +38,8 @@ class Unit(GameEntity):
         self.burn_turns = 0
         self.action_blocked = False
         self.has_attacked = False
+        # Track which targets this unit has attacked during the current turn
+        self.attacked_targets = set()
 
         # Animation attributes
         self.pixel_x = self.col * CELL_SIZE + CELL_SIZE / 2
