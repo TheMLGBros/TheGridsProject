@@ -173,7 +173,8 @@ class GameState:
         if attacker.frozen_turns > 0:
             return False
 
-        if attacker.has_attacked:
+
+        if target in attacker.attacked_targets:
             return False
 
         if attacker.unit_type == "Healer":
@@ -195,6 +196,7 @@ class GameState:
             # remove defeated unit immediately so its cell becomes free
             self.units[:] = [u for u in self.units if u is not target]
             attacker.has_attacked = True
+            attacker.attacked_targets.add(target)
             return True
 
         dr = target.row - attacker.row
@@ -215,6 +217,7 @@ class GameState:
                     target.target_pixel_y = target.pixel_y
                     target.move_queue = []
         attacker.has_attacked = True
+        attacker.attacked_targets.add(target)
         return True
 
     def end_turn(self):
@@ -222,6 +225,7 @@ class GameState:
         self.process_turn_effects()
         for unit in self.units:
             unit.has_attacked = False
+            unit.attacked_targets.clear()
         self.current_player = 2 if self.current_player == 1 else 1
         if self.current_player == 1 and self.player1BlockedTurnsTimer > 0:
             self.player1BlockedTurnsTimer -= 1
@@ -263,17 +267,22 @@ class GameState:
         return valid_moves
 
     def get_attackable_units(self, unit):
-        if unit.has_attacked:
-            return []
         targets = []
         for other in self.units:
             if unit.unit_type == "Healer":
-                if other.owner == unit.owner and other is not unit:
+                if (
+                    other.owner == unit.owner
+                    and other is not unit
+                    and other not in unit.attacked_targets
+                ):
                     dist = self.manhattan_distance((unit.row, unit.col), (other.row, other.col))
                     if dist <= unit.attack_range:
                         targets.append(other)
             else:
-                if other.owner != unit.owner:
+                if (
+                    other.owner != unit.owner
+                    and other not in unit.attacked_targets
+                ):
                     dist = self.manhattan_distance((unit.row, unit.col), (other.row, other.col))
                     if dist <= unit.attack_range:
                         targets.append(other)
