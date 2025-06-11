@@ -101,6 +101,24 @@ def test_unit_removed_on_death():
     assert target not in state.units
 
 
+def test_unit_only_attacks_once_per_turn():
+    state = GameState()
+    state.units = []
+    attacker = Warrior(0, 0, owner=1)
+    target1 = Warrior(0, 1, owner=2)
+    target2 = Warrior(0, 2, owner=2)
+    state.units = [attacker, target1, target2]
+
+    assert state.attack_unit(attacker, target1)
+    health_before = target2.health
+    assert not state.attack_unit(attacker, target2)
+    assert target2.health == health_before
+
+    state.end_turn()
+    state.end_turn()  # back to player 1
+    assert state.attack_unit(attacker, target2)
+
+
 def test_get_valid_deploy_squares(game):
     squares = game.get_valid_deploy_squares()
     for r, c in squares:

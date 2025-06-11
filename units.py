@@ -37,6 +37,7 @@ class Unit(GameEntity):
         self.frozen_turns = 0
         self.burn_turns = 0
         self.action_blocked = False
+        self.has_attacked = False
 
         # Animation attributes
         self.pixel_x = self.col * CELL_SIZE + CELL_SIZE / 2
