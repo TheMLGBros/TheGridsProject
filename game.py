@@ -333,9 +333,7 @@ class GridsGame(arcade.Window):
                         self.selected_unit = unit
                         self.move_squares = self.get_valid_move_squares(unit)
                         self.attack_targets = self.get_attackable_units(unit)
-                        print(
-                            f"Selected unit: {unit.unit_type} (Owner: {unit.owner})"
-                        )
+                        print("Selected unit:", unit.describe())
                         return
                     elif (
                         self.selected_unit

@@ -46,6 +46,14 @@ class Unit(GameEntity):
         self.animation_timer = 0.0
         self.move_queue = []
 
+    def describe(self):
+        """Return a human-readable summary of the unit's key stats."""
+        return (
+            f"{self.unit_type} (Owner: {self.owner}) - "
+            f"HP: {self.health}, ATK: {self.attack}, "
+            f"Move: {self.move_range}, Range: {self.attack_range}"
+        )
+
     def draw(self):
         """Render the unit sprite."""
         self.sprite.center_x = self.pixel_x
