@@ -107,6 +107,11 @@ class GameState:
         if target.health <= 0:
             return
         target.health -= attacker.attack
+        if target.health <= 0:
+            # remove defeated unit immediately so its cell becomes free
+            self.units = [u for u in self.units if u is not target]
+            return True
+
         dr = target.row - attacker.row
         dc = target.col - attacker.col
         knock_row = target.row + (1 if dr > 0 else -1 if dr < 0 else 0)
@@ -118,10 +123,7 @@ class GameState:
                     target.col = knock_col
                     # keep pixel values in sync with logical position so
                     # pathfinding and rendering remain consistent after
-                    # knockback. Missing this update previously meant units
-                    # could visually stay in place while their logical
-                    # location changed, allowing other units to occupy the
-                    # same square.
+                    # knockback.
                     target.pixel_x = knock_col * CELL_SIZE + CELL_SIZE / 2
                     target.pixel_y = knock_row * CELL_SIZE + CELL_SIZE / 2
                     target.target_pixel_x = target.pixel_x
