@@ -329,13 +329,7 @@ class GridsGame(arcade.Window):
 
             for unit in self.units:
                 if unit.row == row and unit.col == col:
-                    if unit.owner == self.current_player:
-                        self.selected_unit = unit
-                        self.move_squares = self.get_valid_move_squares(unit)
-                        self.attack_targets = self.get_attackable_units(unit)
-                        print("Selected unit:", unit.describe())
-                        return
-                    elif (
+                    if (
                         self.selected_unit
                         and unit in self.attack_targets
                         and self.selected_unit.owner == self.current_player
@@ -344,6 +338,12 @@ class GridsGame(arcade.Window):
                         self.attack_targets = []
                         self.move_squares = []
                         self.selected_unit = None
+                        return
+                    if unit.owner == self.current_player:
+                        self.selected_unit = unit
+                        self.move_squares = self.get_valid_move_squares(unit)
+                        self.attack_targets = self.get_attackable_units(unit)
+                        print("Selected unit:", unit.describe())
                         return
             if self.selected_unit and (row, col) in self.move_squares:
                 self.move_unit(self.selected_unit, row, col)

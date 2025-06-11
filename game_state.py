@@ -141,6 +141,14 @@ class GameState:
     def attack_unit(self, attacker, target):
         if attacker.frozen_turns > 0:
             return False
+        if attacker.unit_type == "Healer":
+            if attacker.owner == target.owner:
+                # Heal friendly target up to its maximum health
+                target.health = min(target.health + attacker.attack, target.max_health)
+                return True
+            else:
+                # Healers cannot damage enemies
+                return False
         if target.health <= 0:
             return
         target.health -= attacker.attack
@@ -212,10 +220,16 @@ class GameState:
     def get_attackable_units(self, unit):
         targets = []
         for other in self.units:
-            if other.owner != unit.owner:
-                dist = self.manhattan_distance((unit.row, unit.col), (other.row, other.col))
-                if dist <= unit.attack_range:
-                    targets.append(other)
+            if unit.unit_type == "Healer":
+                if other.owner == unit.owner and other is not unit:
+                    dist = self.manhattan_distance((unit.row, unit.col), (other.row, other.col))
+                    if dist <= unit.attack_range:
+                        targets.append(other)
+            else:
+                if other.owner != unit.owner:
+                    dist = self.manhattan_distance((unit.row, unit.col), (other.row, other.col))
+                    if dist <= unit.attack_range:
+                        targets.append(other)
         return targets
 
     def a_star_pathfinding(self, start, goal):

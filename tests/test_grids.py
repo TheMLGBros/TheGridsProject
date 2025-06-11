@@ -13,7 +13,7 @@ from grids import (
     Teleport,
 )
 from game_state import GameState
-from units import Warrior
+from units import Warrior, Healer
 
 @pytest.fixture
 def game():
@@ -114,3 +114,19 @@ def test_place_unit(game):
     assert any(u.row == squares[0][0] and u.col == squares[0][1] for u in game.units)
     assert len(game.unit_hand) == 2
     assert game.current_action_points == ap_before - 1
+
+
+def test_healer_heals_friendly_and_not_enemy():
+    state = GameState()
+    state.units = []
+    healer = Healer(0, 0, owner=1)
+    ally = Warrior(0, 1, owner=1)
+    enemy = Warrior(0, 2, owner=2)
+    ally.health = 40
+    state.units = [healer, ally, enemy]
+    state.attack_unit(healer, ally)
+    assert ally.health > 40
+    assert ally.health <= ally.max_health
+    prev = enemy.health
+    state.attack_unit(healer, enemy)
+    assert enemy.health == prev
