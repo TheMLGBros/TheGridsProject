@@ -113,9 +113,20 @@ class GameState:
         knock_col = target.col + (1 if dc > 0 else -1 if dc < 0 else 0)
         if 0 <= knock_row < ROWS and 0 <= knock_col < COLUMNS:
             if not any(u.row == knock_row and u.col == knock_col for u in self.units):
-                if not attacker == target:
+                if attacker != target:
                     target.row = knock_row
                     target.col = knock_col
+                    # keep pixel values in sync with logical position so
+                    # pathfinding and rendering remain consistent after
+                    # knockback. Missing this update previously meant units
+                    # could visually stay in place while their logical
+                    # location changed, allowing other units to occupy the
+                    # same square.
+                    target.pixel_x = knock_col * CELL_SIZE + CELL_SIZE / 2
+                    target.pixel_y = knock_row * CELL_SIZE + CELL_SIZE / 2
+                    target.target_pixel_x = target.pixel_x
+                    target.target_pixel_y = target.pixel_y
+                    target.move_queue = []
         return True
 
     def end_turn(self):
