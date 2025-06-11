@@ -13,7 +13,7 @@ from grids import (
     Teleport,
 )
 from game_state import GameState
-from units import Warrior
+from units import Warrior, Healer
 
 @pytest.fixture
 def game():
@@ -57,8 +57,10 @@ def test_teleport_spell(game):
 def test_draw_unit_button(game):
     initial = len(game.unit_hand)
     button = game.draw_unit_button
+    ap_before = game.current_action_points
     game.on_mouse_press(button['center_x'], button['center_y'], 1, None)
     assert len(game.unit_hand) == initial + 1
+    assert game.current_action_points == ap_before - 1
 
 
 def test_move_unit_single_step(game):
@@ -99,6 +101,24 @@ def test_unit_removed_on_death():
     assert target not in state.units
 
 
+def test_unit_only_attacks_once_per_turn():
+    state = GameState()
+    state.units = []
+    attacker = Warrior(0, 0, owner=1)
+    target1 = Warrior(0, 1, owner=2)
+    target2 = Warrior(0, 2, owner=2)
+    state.units = [attacker, target1, target2]
+
+    assert state.attack_unit(attacker, target1)
+    health_before = target2.health
+    assert not state.attack_unit(attacker, target2)
+    assert target2.health == health_before
+
+    state.end_turn()
+    state.end_turn()  # back to player 1
+    assert state.attack_unit(attacker, target2)
+
+
 def test_get_valid_deploy_squares(game):
     squares = game.get_valid_deploy_squares()
     for r, c in squares:
@@ -114,3 +134,19 @@ def test_place_unit(game):
     assert any(u.row == squares[0][0] and u.col == squares[0][1] for u in game.units)
     assert len(game.unit_hand) == 2
     assert game.current_action_points == ap_before - 1
+
+
+def test_healer_heals_friendly_and_not_enemy():
+    state = GameState()
+    state.units = []
+    healer = Healer(0, 0, owner=1)
+    ally = Warrior(0, 1, owner=1)
+    enemy = Warrior(0, 2, owner=2)
+    ally.health = 40
+    state.units = [healer, ally, enemy]
+    state.attack_unit(healer, ally)
+    assert ally.health > 40
+    assert ally.health <= ally.max_health
+    prev = enemy.health
+    state.attack_unit(healer, enemy)
+    assert enemy.health == prev

@@ -26,6 +26,8 @@ class Unit(GameEntity):
         self.unit_type = unit_type
         self.owner = owner  # e.g., player 1 or 2
         self.health = health
+        # Track the maximum health so healing cannot exceed the original value
+        self.max_health = health
         self.attack = attack
         self.move_range = move_range
         self.attack_range = attack_range
@@ -35,6 +37,7 @@ class Unit(GameEntity):
         self.frozen_turns = 0
         self.burn_turns = 0
         self.action_blocked = False
+        self.has_attacked = False
 
         # Animation attributes
         self.pixel_x = self.col * CELL_SIZE + CELL_SIZE / 2

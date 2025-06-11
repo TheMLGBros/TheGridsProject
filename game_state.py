@@ -100,17 +100,21 @@ class GameState:
         self.units.append(Viking(ROWS // 2 + 1, COLUMNS - 1, owner=2))
         self.units.append(Trebuchet(ROWS // 2 - 1, COLUMNS - 1, owner=2))
 
-    def draw_cards(self, deck, player, num=1):
+    def draw_cards(self, deck, player, num=1, ap_cost=0):
         """Draw cards from a deck into the specified player's hand."""
         hand = self.hands[player]
         for _ in range(num):
             if deck and len(hand) < HAND_CAPACITY:
+                if ap_cost and self.current_action_points < ap_cost:
+                    break
                 card = deck.pop(0)
                 hand.append(card)
                 if isinstance(card, Card):
                     self.spell_hands[player].append(card)
                 elif isinstance(card, type) and issubclass(card, Unit):
                     self.unit_hands[player].append(card)
+                if ap_cost:
+                    self.current_action_points -= ap_cost
 
     def get_valid_deploy_squares(self, player=None):
         """Return free squares on the deployment column for the player."""
@@ -168,6 +172,19 @@ class GameState:
     def attack_unit(self, attacker, target):
         if attacker.frozen_turns > 0:
             return False
+
+        if attacker.has_attacked:
+            return False
+
+        if attacker.unit_type == "Healer":
+            if attacker.owner == target.owner:
+                # Heal friendly target up to its maximum health
+                target.health = min(target.health + attacker.attack, target.max_health)
+                return True
+            else:
+                # Healers cannot damage enemies
+                return False
+              
         if target.health <= 0:
             return
         target.health -= attacker.attack
@@ -175,6 +192,9 @@ class GameState:
             # remove defeated unit immediately so its cell becomes free and
             # check if the game has been won.
             self.remove_dead_units()
+            # remove defeated unit immediately so its cell becomes free
+            self.units[:] = [u for u in self.units if u is not target]
+            attacker.has_attacked = True
             return True
 
         dr = target.row - attacker.row
@@ -194,11 +214,14 @@ class GameState:
                     target.target_pixel_x = target.pixel_x
                     target.target_pixel_y = target.pixel_y
                     target.move_queue = []
+        attacker.has_attacked = True
         return True
 
     def end_turn(self):
         # apply status effects at the end of each turn before switching players
         self.process_turn_effects()
+        for unit in self.units:
+            unit.has_attacked = False
         self.current_player = 2 if self.current_player == 1 else 1
         if self.current_player == 1 and self.player1BlockedTurnsTimer > 0:
             self.player1BlockedTurnsTimer -= 1
@@ -240,12 +263,20 @@ class GameState:
         return valid_moves
 
     def get_attackable_units(self, unit):
+        if unit.has_attacked:
+            return []
         targets = []
         for other in self.units:
-            if other.owner != unit.owner:
-                dist = self.manhattan_distance((unit.row, unit.col), (other.row, other.col))
-                if dist <= unit.attack_range:
-                    targets.append(other)
+            if unit.unit_type == "Healer":
+                if other.owner == unit.owner and other is not unit:
+                    dist = self.manhattan_distance((unit.row, unit.col), (other.row, other.col))
+                    if dist <= unit.attack_range:
+                        targets.append(other)
+            else:
+                if other.owner != unit.owner:
+                    dist = self.manhattan_distance((unit.row, unit.col), (other.row, other.col))
+                    if dist <= unit.attack_range:
+                        targets.append(other)
         return targets
 
     def a_star_pathfinding(self, start, goal):
