@@ -16,7 +16,11 @@ class Unit(GameEntity):
     def __init__(self, row, col, unit_type, owner, health, attack, move_range, attack_range, cost):
         color = arcade.color.BLUE if owner == 1 else arcade.color.RED
         sprite_path = self.SPRITE_PATHS.get(unit_type, "sprites/units/commander.png")
-        sprite = arcade.Sprite(sprite_path, scale=CELL_SIZE / 64)
+        # Original unit artwork is extremely large (1024x1536 pixels). Scaling
+        # based on the larger dimension ensures the sprite fits inside a single
+        # grid cell regardless of the cell size. 1536 corresponds to the
+        # original sprite height.
+        sprite = arcade.Sprite(sprite_path, scale=CELL_SIZE / 1536)
         sprite.color = color
         super().__init__(row, col, sprite)
         self.unit_type = unit_type
