@@ -97,3 +97,20 @@ def test_unit_removed_on_death():
     state.units = [attacker, target]
     state.attack_unit(attacker, target)
     assert target not in state.units
+
+
+def test_get_valid_deploy_squares(game):
+    squares = game.get_valid_deploy_squares()
+    for r, c in squares:
+        assert c == 0
+        assert all(not (u.row == r and u.col == c) for u in game.units)
+
+
+def test_place_unit(game):
+    squares = game.get_valid_deploy_squares()
+    unit_cls = game.unit_hand[0]
+    ap_before = game.current_action_points
+    game.place_unit(unit_cls, *squares[0])
+    assert any(u.row == squares[0][0] and u.col == squares[0][1] for u in game.units)
+    assert len(game.unit_hand) == 2
+    assert game.current_action_points == ap_before - 1
