@@ -5,6 +5,7 @@ from constants import (SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE, ROWS, COLUMNS,
                        CELL_SIZE, GRID_WIDTH, GRID_HEIGHT, UI_PANEL_WIDTH)
 from units import (Unit, Warrior, Archer, Healer, Trebuchet, Viking)
 from cards import (
+    Card,
     Fireball,
     Freeze,
     StrengthUp,
@@ -25,12 +26,14 @@ class GridsGame(arcade.Window):
         # convenience references used by UI code
         self.unit_deck = self.state.unit_deck
         self.spell_deck = self.state.spell_deck
+        self.hand = self.state.hand
         self.unit_hand = self.state.unit_hand
         self.spell_hand = self.state.spell_hand
         self.player1BlockedTurnsTimer = self.state.player1BlockedTurnsTimer
         self.player2BlockedTurnsTimer = self.state.player2BlockedTurnsTimer
         self.current_action_points = self.state.current_action_points
         self.current_player = self.state.current_player
+        self.sync_hands()
 
         self.units = self.state.units
         self.obstacles = self.state.obstacles
@@ -61,6 +64,12 @@ class GridsGame(arcade.Window):
         self.card_rects = []
         self.unit_card_rects = []
 
+    def sync_hands(self):
+        """Refresh hand references from the underlying game state."""
+        self.hand = self.state.hand
+        self.unit_hand = self.state.unit_hand
+        self.spell_hand = self.state.spell_hand
+
     # expose selected_unit through the underlying game state
     @property
     def selected_unit(self):
@@ -80,8 +89,9 @@ class GridsGame(arcade.Window):
     def init_board(self):
         self.state.init_board()
 
-    def draw_cards(self, deck, hand, num=1):
-        self.state.draw_cards(deck, hand, num)
+    def draw_cards(self, deck, player, num=1):
+        self.state.draw_cards(deck, player, num)
+        self.sync_hands()
 
     def move_unit(self, unit, target_row, target_col):
         result = self.state.move_unit(unit, target_row, target_col, animate=True)
@@ -95,10 +105,12 @@ class GridsGame(arcade.Window):
         self.state.end_turn()
         self.current_action_points = self.state.current_action_points
         self.current_player = self.state.current_player
+        self.sync_hands()
 
     def play_card(self, card, target):
         result = self.state.play_card(card, target)
         self.current_action_points = self.state.current_action_points
+        self.sync_hands()
         return result
 
     def on_draw(self):
@@ -204,11 +216,11 @@ class GridsGame(arcade.Window):
             anchor_y="center",
         )
 
-        # Draw spell hand
+        # Draw combined hand for current player
         y_pos = SCREEN_HEIGHT - 100
-        arcade.draw_text("Spell Hand:", GRID_WIDTH + 10, y_pos + 20, arcade.color.WHITE, 12)
+        arcade.draw_text("Hand:", GRID_WIDTH + 10, y_pos + 20, arcade.color.WHITE, 12)
         self.card_rects = []
-        for idx, card in enumerate(self.spell_hand):
+        for idx, item in enumerate(self.hand):
             rect = {
                 'center_x': panel_x,
                 'center_y': y_pos - idx * 30,
@@ -226,43 +238,18 @@ class GridsGame(arcade.Window):
             )
             text_x = rect['center_x'] - rect['width'] / 2 + 5
             text_y = rect['center_y'] - 8
+            if isinstance(item, Card):
+                label = f"{idx}: {item.name} (Cost: {item.cost})"
+            else:
+                label = item.__name__
             arcade.draw_text(
-                f"{idx}: {card.name} (Cost: {card.cost})",
+                label,
                 text_x,
                 text_y,
                 arcade.color.WHITE,
                 12,
             )
             self.card_rects.append(rect)
-
-        # Draw unit hand
-        unit_y = y_pos - len(self.spell_hand) * 30 - 60
-        arcade.draw_text("Unit Hand:", GRID_WIDTH + 10, unit_y + 20, arcade.color.WHITE, 12)
-        self.unit_card_rects = []
-        for idx, unit_cls in enumerate(self.unit_hand):
-            rect = {
-                'center_x': panel_x,
-                'center_y': unit_y - idx * 30,
-                'width': UI_PANEL_WIDTH - 20,
-                'height': 24,
-            }
-            arcade.draw_lbwh_rectangle_filled(
-                rect['center_x'] - rect['width'] / 2,
-                rect['center_y'] - rect['height'] / 2,
-                rect['width'],
-                rect['height'],
-                arcade.color.DARK_SLATE_GRAY,
-            )
-            text_x = rect['center_x'] - rect['width'] / 2 + 5
-            text_y = rect['center_y'] - 8
-            arcade.draw_text(
-                unit_cls.__name__,
-                text_x,
-                text_y,
-                arcade.color.WHITE,
-                12,
-            )
-            self.unit_card_rects.append(rect)
 
     def on_mouse_press(self, x, y, button, modifiers):
         print(f"Mouse pressed at ({x}, {y})")
@@ -272,15 +259,19 @@ class GridsGame(arcade.Window):
                 self.end_turn()
                 return
             if self.point_in_rect(x, y, self.draw_card_button):
-                self.draw_cards(self.spell_deck, self.spell_hand, num=1)
+                self.draw_cards(self.spell_deck, self.current_player, num=1)
                 return
             if self.point_in_rect(x, y, self.draw_unit_button):
-                self.draw_cards(self.unit_deck, self.unit_hand, num=1)
+                self.draw_cards(self.unit_deck, self.current_player, num=1)
                 return
             for idx, rect in enumerate(self.card_rects):
                 if self.point_in_rect(x, y, rect):
                     self.selected_card_index = idx
-                    print(f"Selected card: {self.spell_hand[idx].name}")
+                    item = self.hand[idx]
+                    if isinstance(item, Card):
+                        print(f"Selected card: {item.name}")
+                    else:
+                        print(f"Selected unit: {item.__name__}")
                     return
             return
 
@@ -290,17 +281,18 @@ class GridsGame(arcade.Window):
             print(f"Clicked on cell: ({row}, {col})")
 
             # If a card is selected, play it on this target
-            if self.selected_card_index is not None and self.selected_card_index < len(self.spell_hand):
-                target_unit = None
-                for unit in self.units:
-                    if unit.row == row and unit.col == col:
-                        target_unit = unit
-                        break
-                target = target_unit if target_unit else (row, col)
-                card = self.spell_hand[self.selected_card_index]
-                self.play_card(card, target)
-                self.selected_card_index = None
-                return
+            if self.selected_card_index is not None and self.selected_card_index < len(self.hand):
+                selected = self.hand[self.selected_card_index]
+                if isinstance(selected, Card):
+                    target_unit = None
+                    for unit in self.units:
+                        if unit.row == row and unit.col == col:
+                            target_unit = unit
+                            break
+                    target = target_unit if target_unit else (row, col)
+                    self.play_card(selected, target)
+                    self.selected_card_index = None
+                    return
 
             for unit in self.units:
                 if unit.row == row and unit.col == col:
@@ -358,7 +350,7 @@ class GridsGame(arcade.Window):
         self.player2BlockedTurnsTimer = self.state.player2BlockedTurnsTimer
         self.current_action_points = self.state.current_action_points
         self.current_player = self.state.current_player
-
+        self.sync_hands()
 
 def main():
     window = GridsGame()
