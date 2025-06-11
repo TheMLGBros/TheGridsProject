@@ -51,7 +51,12 @@ class Unit(GameEntity):
         arcade.draw_sprite(self.sprite)
 
     def start_move(self, path):
-        self.move_queue = path
+        """Begin moving along the provided path."""
+        # Copy the path so callers retain the original list. This prevents side
+        # effects such as the move list being emptied by the first step which
+        # previously caused index errors for the caller when they accessed the
+        # path after calling ``start_move``.
+        self.move_queue = list(path)
         if self.move_queue:
             self._begin_next_step()
 
