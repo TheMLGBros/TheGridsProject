@@ -24,8 +24,6 @@ class GridsGame(arcade.Window):
         self.state = GameState()
 
         # convenience references used by UI code
-        self.unit_deck = self.state.unit_deck
-        self.spell_deck = self.state.spell_deck
         self.hand = self.state.hand
         self.unit_hand = self.state.unit_hand
         self.spell_hand = self.state.spell_hand
@@ -282,10 +280,12 @@ class GridsGame(arcade.Window):
                 self.end_turn()
                 return
             if self.point_in_rect(x, y, self.draw_card_button):
-                self.draw_cards(self.spell_deck, self.current_player, num=1, ap_cost=1)
+                deck = self.state.spell_decks[self.current_player]
+                self.draw_cards(deck, self.current_player, num=1, ap_cost=1)
                 return
             if self.point_in_rect(x, y, self.draw_unit_button):
-                self.draw_cards(self.unit_deck, self.current_player, num=1, ap_cost=1)
+                deck = self.state.unit_decks[self.current_player]
+                self.draw_cards(deck, self.current_player, num=1, ap_cost=1)
                 return
             for idx, rect in enumerate(self.card_rects):
                 if self.point_in_rect(x, y, rect):
