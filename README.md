@@ -40,3 +40,17 @@ python self_play.py
 
 This uses purely random actions, but provides a starting point for more
 advanced reinforcement learning experiments.
+
+## DQN Training Example
+
+A simple Deep Q-Network agent and training script are included for
+experimenting with learning in `GridsEnv`. Install PyTorch and run
+`train_dqn.py` to train two agents in self‑play:
+
+```bash
+pip install torch
+python train_dqn.py
+```
+
+This implementation is intentionally lightweight and is aimed at CPU
+training on a laptop.
