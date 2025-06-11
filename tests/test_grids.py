@@ -12,6 +12,8 @@ from grids import (
     COLUMNS,
     Teleport,
 )
+from game_state import GameState
+from units import Warrior
 
 @pytest.fixture
 def game():
@@ -83,3 +85,15 @@ def test_move_unit_single_step(game):
     assert dest is not None, "No available unit with a free neighbouring cell"
 
     assert game.move_unit(unit, *dest)
+
+
+def test_unit_removed_on_death():
+    """Units reduced to zero health should be removed immediately."""
+    state = GameState()
+    state.units = []
+    attacker = Warrior(0, 0, owner=1)
+    target = Warrior(0, 1, owner=2)
+    target.health = 10
+    state.units = [attacker, target]
+    state.attack_unit(attacker, target)
+    assert target not in state.units
