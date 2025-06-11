@@ -141,7 +141,7 @@ class GameState:
         target.health -= attacker.attack
         if target.health <= 0:
             # remove defeated unit immediately so its cell becomes free
-            self.units = [u for u in self.units if u is not target]
+            self.units[:] = [u for u in self.units if u is not target]
             return True
 
         dr = target.row - attacker.row
@@ -241,4 +241,5 @@ class GameState:
         for unit in self.units:
             if unit.frozen_turns > 0:
                 unit.frozen_turns -= 1
-        self.units = [u for u in self.units if u.health > 0]
+        # modify the list in-place so external references remain valid
+        self.units[:] = [u for u in self.units if u.health > 0]
