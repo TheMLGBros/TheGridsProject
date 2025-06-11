@@ -57,8 +57,10 @@ def test_teleport_spell(game):
 def test_draw_unit_button(game):
     initial = len(game.unit_hand)
     button = game.draw_unit_button
+    ap_before = game.current_action_points
     game.on_mouse_press(button['center_x'], button['center_y'], 1, None)
     assert len(game.unit_hand) == initial + 1
+    assert game.current_action_points == ap_before - 1
 
 
 def test_move_unit_single_step(game):
