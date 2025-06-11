@@ -28,7 +28,13 @@ class GridsGame(arcade.Window):
         self.player1BlockedTurnsTimer = 0
         self.player2BlockedTurnsTimer = 0
 
-        self.unit_deck = []
+        self.unit_deck = [
+            Warrior,
+            Archer,
+            Healer,
+            Trebuchet,
+            Viking,
+        ]
         self.spell_deck = [
             Fireball(),
             Freeze(),
@@ -58,10 +64,18 @@ class GridsGame(arcade.Window):
             'width': 120,
             'height': 30,
         }
+        self.draw_unit_button = {
+            'center_x': GRID_WIDTH + UI_PANEL_WIDTH / 2,
+            'center_y': 120,
+            'width': 120,
+            'height': 30,
+        }
         self.card_rects = []
+        self.unit_card_rects = []
 
         self.init_board()
         self.draw_cards(self.spell_deck, self.spell_hand, num=3)
+        self.draw_cards(self.unit_deck, self.unit_hand, num=3)
 
     def point_in_rect(self, x, y, rect):
         left = rect['center_x'] - rect['width'] / 2
@@ -211,9 +225,25 @@ class GridsGame(arcade.Window):
             arcade.color.GRAY,
         )
         arcade.draw_text(
-            "Draw Card",
+            "Draw Spell",
             self.draw_card_button['center_x'],
             self.draw_card_button['center_y'],
+            arcade.color.WHITE,
+            12,
+            anchor_x="center",
+            anchor_y="center",
+        )
+        arcade.draw_lbwh_rectangle_filled(
+            self.draw_unit_button['center_x'] - self.draw_unit_button['width'] / 2,
+            self.draw_unit_button['center_y'] - self.draw_unit_button['height'] / 2,
+            self.draw_unit_button['width'],
+            self.draw_unit_button['height'],
+            arcade.color.GRAY,
+        )
+        arcade.draw_text(
+            "Draw Unit",
+            self.draw_unit_button['center_x'],
+            self.draw_unit_button['center_y'],
             arcade.color.WHITE,
             12,
             anchor_x="center",
@@ -251,6 +281,35 @@ class GridsGame(arcade.Window):
             )
             self.card_rects.append(rect)
 
+        # Draw unit hand
+        unit_y = y_pos - len(self.spell_hand) * 30 - 60
+        arcade.draw_text("Unit Hand:", GRID_WIDTH + 10, unit_y + 20, arcade.color.WHITE, 12)
+        self.unit_card_rects = []
+        for idx, unit_cls in enumerate(self.unit_hand):
+            rect = {
+                'center_x': panel_x,
+                'center_y': unit_y - idx * 30,
+                'width': UI_PANEL_WIDTH - 20,
+                'height': 24,
+            }
+            arcade.draw_lbwh_rectangle_filled(
+                rect['center_x'] - rect['width'] / 2,
+                rect['center_y'] - rect['height'] / 2,
+                rect['width'],
+                rect['height'],
+                arcade.color.DARK_SLATE_GRAY,
+            )
+            text_x = rect['center_x'] - rect['width'] / 2 + 5
+            text_y = rect['center_y'] - 8
+            arcade.draw_text(
+                unit_cls.__name__,
+                text_x,
+                text_y,
+                arcade.color.WHITE,
+                12,
+            )
+            self.unit_card_rects.append(rect)
+
     def on_mouse_press(self, x, y, button, modifiers):
         print(f"Mouse pressed at ({x}, {y})")
         # Click within UI panel
@@ -260,6 +319,9 @@ class GridsGame(arcade.Window):
                 return
             if self.point_in_rect(x, y, self.draw_card_button):
                 self.draw_cards(self.spell_deck, self.spell_hand, num=1)
+                return
+            if self.point_in_rect(x, y, self.draw_unit_button):
+                self.draw_cards(self.unit_deck, self.unit_hand, num=1)
                 return
             for idx, rect in enumerate(self.card_rects):
                 if self.point_in_rect(x, y, rect):
