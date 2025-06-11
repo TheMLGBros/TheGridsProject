@@ -45,7 +45,8 @@ advanced reinforcement learning experiments.
 
 A simple Deep Q-Network agent and training script are included for
 experimenting with learning in `GridsEnv`. Install PyTorch and run
-`train_dqn.py` to train two agents in self‑play:
+`train_dqn.py` to train two agents in self‑play. The weights of the first
+agent are written to `dqn_model.pth` at the end of training:
 
 ```bash
 pip install torch
@@ -54,3 +55,16 @@ python train_dqn.py
 
 This implementation is intentionally lightweight and is aimed at CPU
 training on a laptop.
+
+## Watching AI vs AI With Graphics
+
+To simply watch two agents play a match with the graphical interface enabled,
+run the `ai_vs_ai.py` script:
+
+```bash
+python ai_vs_ai.py
+```
+
+By default random agents are used. If you have a saved model from training,
+replace them in the script with `DQNAgent` instances and call `load` with the
+path to the weight file.
