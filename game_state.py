@@ -1,7 +1,7 @@
 # Game state logic for grids environment
 import heapq
 import random
-from constants import ROWS, COLUMNS, CELL_SIZE
+from constants import ROWS, COLUMNS, CELL_SIZE, HAND_CAPACITY
 from units import (
     Unit,
     Warrior,
@@ -11,6 +11,7 @@ from units import (
     Viking,
 )
 from cards import (
+    Card,
     Fireball,
     Freeze,
     StrengthUp,
@@ -42,11 +43,25 @@ class GameState:
             ActionBlock(),
             Teleport(),
         ]
-        self.unit_hand = []
-        self.spell_hand = []
+
+        # hands are unique per player but share one combined list of units and spells
+        self.hands = {1: [], 2: []}
+        self.unit_hands = {1: [], 2: []}
+        self.spell_hands = {1: [], 2: []}
+
         self.init_board()
-        self.draw_cards(self.spell_deck, self.spell_hand, num=3)
-        self.draw_cards(self.unit_deck, self.unit_hand, num=3)
+        # give the starting player an initial hand
+        self.draw_cards(self.spell_deck, self.current_player, num=3)
+        self.draw_cards(self.unit_deck, self.current_player, num=3)
+
+        # convenience references for the current player
+        self.refresh_player_hands()
+
+    def refresh_player_hands(self):
+        """Update convenience references for the current player."""
+        self.hand = self.hands[self.current_player]
+        self.unit_hand = self.unit_hands[self.current_player]
+        self.spell_hand = self.spell_hands[self.current_player]
 
     def init_board(self):
         self.units.append(Unit(ROWS // 2, 0, "Commander", owner=1, health=300, attack=20, move_range=2, attack_range=1, cost=1))
@@ -57,11 +72,17 @@ class GameState:
         self.units.append(Viking(ROWS // 2 + 1, COLUMNS - 1, owner=2))
         self.units.append(Trebuchet(ROWS // 2 - 1, COLUMNS - 1, owner=2))
 
-    def draw_cards(self, deck, hand, num=1):
+    def draw_cards(self, deck, player, num=1):
+        """Draw cards from a deck into the specified player's hand."""
+        hand = self.hands[player]
         for _ in range(num):
-            if deck:
+            if deck and len(hand) < HAND_CAPACITY:
                 card = deck.pop(0)
                 hand.append(card)
+                if isinstance(card, Card):
+                    self.spell_hands[player].append(card)
+                elif isinstance(card, type) and issubclass(card, Unit):
+                    self.unit_hands[player].append(card)
 
     # ---------- Core game mechanics ----------
     def move_unit(self, unit, target_row, target_col, animate=False):
@@ -100,16 +121,21 @@ class GameState:
     def end_turn(self):
         self.current_action_points = 7
         self.current_player = 2 if self.current_player == 1 else 1
-        self.draw_cards(self.spell_deck, self.spell_hand, num=1)
+        self.draw_cards(self.spell_deck, self.current_player, num=1)
+        self.refresh_player_hands()
 
     def play_card(self, card, target):
-        if card not in self.spell_hand:
+        player = self.current_player
+        if card not in self.spell_hands[player]:
             return False
         if self.current_action_points < card.cost:
             return False
         card.play(self, target)
-        self.spell_hand.remove(card)
+        self.spell_hands[player].remove(card)
+        if card in self.hands[player]:
+            self.hands[player].remove(card)
         self.current_action_points -= card.cost
+        self.refresh_player_hands()
         return True
 
     # ---------- Helpers ----------

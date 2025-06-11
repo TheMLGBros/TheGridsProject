@@ -8,3 +8,6 @@ CELL_SIZE = 64
 GRID_WIDTH = COLUMNS * CELL_SIZE
 GRID_HEIGHT = ROWS * CELL_SIZE
 UI_PANEL_WIDTH = SCREEN_WIDTH - GRID_WIDTH
+
+# Maximum number of cards/units a player can hold at once
+HAND_CAPACITY = 10
