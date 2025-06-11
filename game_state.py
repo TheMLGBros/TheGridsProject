@@ -30,6 +30,7 @@ class GameState:
         self.current_player = 1
         self.player1BlockedTurnsTimer = 0
         self.player2BlockedTurnsTimer = 0
+        self.fires = {}
 
         # stateful selections used by some cards
         self.selected_unit = None
@@ -118,6 +119,8 @@ class GameState:
 
     # ---------- Core game mechanics ----------
     def move_unit(self, unit, target_row, target_col, animate=False):
+        if unit.frozen_turns > 0:
+            return False
         path = self.a_star_pathfinding((unit.row, unit.col), (target_row, target_col))
         if not path or len(path) > unit.move_range:
             return False
@@ -136,6 +139,8 @@ class GameState:
         return True
 
     def attack_unit(self, attacker, target):
+        if attacker.frozen_turns > 0:
+            return False
         if target.health <= 0:
             return
         target.health -= attacker.attack
@@ -164,8 +169,17 @@ class GameState:
         return True
 
     def end_turn(self):
-        self.current_action_points = 7
+        # apply status effects at the end of each turn before switching players
+        self.process_turn_effects()
         self.current_player = 2 if self.current_player == 1 else 1
+        if self.current_player == 1 and self.player1BlockedTurnsTimer > 0:
+            self.player1BlockedTurnsTimer -= 1
+            self.current_action_points = 4
+        elif self.current_player == 2 and self.player2BlockedTurnsTimer > 0:
+            self.player2BlockedTurnsTimer -= 1
+            self.current_action_points = 4
+        else:
+            self.current_action_points = 7
         self.draw_cards(self.spell_deck, self.current_player, num=1)
         self.refresh_player_hands()
 
@@ -237,9 +251,22 @@ class GameState:
     def manhattan_distance(self, cell1, cell2):
         return abs(cell1[0] - cell2[0]) + abs(cell1[1] - cell2[1])
 
-    def update(self):
+    def process_turn_effects(self):
         for unit in self.units:
             if unit.frozen_turns > 0:
                 unit.frozen_turns -= 1
+            if unit.burn_turns > 0:
+                unit.health -= 10
+                unit.burn_turns -= 1
+            if (unit.row, unit.col) in self.fires:
+                unit.health -= 15
+        # decrement fire durations and clean up
+        expired = []
+        for pos in list(self.fires.keys()):
+            self.fires[pos] -= 1
+            if self.fires[pos] <= 0:
+                expired.append(pos)
+        for pos in expired:
+            del self.fires[pos]
         # modify the list in-place so external references remain valid
         self.units[:] = [u for u in self.units if u.health > 0]

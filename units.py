@@ -33,6 +33,7 @@ class Unit(GameEntity):
         self.deploy_cost = deploy_cost
         # Additional status flags
         self.frozen_turns = 0
+        self.burn_turns = 0
         self.action_blocked = False
 
         # Animation attributes
@@ -50,6 +51,22 @@ class Unit(GameEntity):
         self.sprite.center_x = self.pixel_x
         self.sprite.center_y = self.pixel_y
         arcade.draw_sprite(self.sprite)
+        if self.frozen_turns > 0:
+            arcade.draw_text(
+                "F",
+                self.pixel_x - CELL_SIZE / 4,
+                self.pixel_y + CELL_SIZE / 4,
+                arcade.color.CYAN,
+                12,
+            )
+        if self.burn_turns > 0:
+            arcade.draw_text(
+                "B",
+                self.pixel_x + CELL_SIZE / 4 - 8,
+                self.pixel_y + CELL_SIZE / 4,
+                arcade.color.RED,
+                12,
+            )
 
     def start_move(self, path):
         """Begin moving along the provided path."""
