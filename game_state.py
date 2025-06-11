@@ -73,17 +73,21 @@ class GameState:
         self.units.append(Viking(ROWS // 2 + 1, COLUMNS - 1, owner=2))
         self.units.append(Trebuchet(ROWS // 2 - 1, COLUMNS - 1, owner=2))
 
-    def draw_cards(self, deck, player, num=1):
+    def draw_cards(self, deck, player, num=1, ap_cost=0):
         """Draw cards from a deck into the specified player's hand."""
         hand = self.hands[player]
         for _ in range(num):
             if deck and len(hand) < HAND_CAPACITY:
+                if ap_cost and self.current_action_points < ap_cost:
+                    break
                 card = deck.pop(0)
                 hand.append(card)
                 if isinstance(card, Card):
                     self.spell_hands[player].append(card)
                 elif isinstance(card, type) and issubclass(card, Unit):
                     self.unit_hands[player].append(card)
+                if ap_cost:
+                    self.current_action_points -= ap_cost
 
     def get_valid_deploy_squares(self, player=None):
         """Return free squares on the deployment column for the player."""
