@@ -81,7 +81,7 @@ class GridsEnv(gym.Env):
         if self.state.current_action_points <= 0:
             self.state.end_turn()
 
-        terminated = False
+        terminated = self.state.winner is not None
         truncated = False
         return self._get_obs(), reward, terminated, truncated, {}
 
