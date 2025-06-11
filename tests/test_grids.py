@@ -57,3 +57,29 @@ def test_draw_unit_button(game):
     button = game.draw_unit_button
     game.on_mouse_press(button['center_x'], button['center_y'], 1, None)
     assert len(game.unit_hand) == initial + 1
+
+
+def test_move_unit_single_step(game):
+    """Moving a unit one square should not raise an error."""
+    unit = None
+    dest = None
+    for candidate in [u for u in game.units if u.owner == game.current_player]:
+        neighbours = [
+            (candidate.row, candidate.col + 1),
+            (candidate.row, candidate.col - 1),
+            (candidate.row + 1, candidate.col),
+            (candidate.row - 1, candidate.col),
+        ]
+        for r, c in neighbours:
+            if 0 <= r < ROWS and 0 <= c < COLUMNS and not any(
+                other.row == r and other.col == c for other in game.units
+            ):
+                unit = candidate
+                dest = (r, c)
+                break
+        if dest:
+            break
+
+    assert dest is not None, "No available unit with a free neighbouring cell"
+
+    assert game.move_unit(unit, *dest)
