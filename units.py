@@ -13,7 +13,7 @@ class Unit(GameEntity):
         "Trebuchet": "sprites/units/trebuchet.png",
         "Viking": "sprites/units/viking.png",
     }
-    def __init__(self, row, col, unit_type, owner, health, attack, move_range, attack_range, cost):
+    def __init__(self, row, col, unit_type, owner, health, attack, move_range, attack_range, cost, deploy_cost=1):
         color = arcade.color.BLUE if owner == 1 else arcade.color.RED
         sprite_path = self.SPRITE_PATHS.get(unit_type, "sprites/units/commander.png")
         # Original unit artwork is extremely large (1024x1536 pixels). Scaling
@@ -30,6 +30,7 @@ class Unit(GameEntity):
         self.move_range = move_range
         self.attack_range = attack_range
         self.cost = cost
+        self.deploy_cost = deploy_cost
         # Additional status flags
         self.frozen_turns = 0
         self.action_blocked = False

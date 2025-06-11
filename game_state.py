@@ -84,6 +84,38 @@ class GameState:
                 elif isinstance(card, type) and issubclass(card, Unit):
                     self.unit_hands[player].append(card)
 
+    def get_valid_deploy_squares(self, player=None):
+        """Return free squares on the deployment column for the player."""
+        if player is None:
+            player = self.current_player
+        col = 0 if player == 1 else COLUMNS - 1
+        valid = []
+        for row in range(ROWS):
+            if not any(u.row == row and u.col == col for u in self.units):
+                valid.append((row, col))
+        return valid
+
+    def place_unit(self, unit_cls, row, col):
+        """Deploy a unit from the player's hand onto the board."""
+        player = self.current_player
+        if unit_cls not in self.unit_hands[player]:
+            return None
+        if (player == 1 and col != 0) or (player == 2 and col != COLUMNS - 1):
+            return None
+        if any(u.row == row and u.col == col for u in self.units):
+            return None
+        unit = unit_cls(row, col, owner=player)
+        cost = getattr(unit, "deploy_cost", 1)
+        if self.current_action_points < cost:
+            return None
+        self.unit_hands[player].remove(unit_cls)
+        if unit_cls in self.hands[player]:
+            self.hands[player].remove(unit_cls)
+        self.units.append(unit)
+        self.current_action_points -= cost
+        self.refresh_player_hands()
+        return unit
+
     # ---------- Core game mechanics ----------
     def move_unit(self, unit, target_row, target_col, animate=False):
         path = self.a_star_pathfinding((unit.row, unit.col), (target_row, target_col))

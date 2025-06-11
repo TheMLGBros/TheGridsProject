@@ -41,6 +41,8 @@ class GridsGame(arcade.Window):
         self.selected_card_index = None
         self.move_squares = []
         self.attack_targets = []
+        self.deploy_squares = []
+        self.selected_unit_class = None
 
         # UI element rectangles
         self.end_turn_button = {
@@ -113,6 +115,18 @@ class GridsGame(arcade.Window):
         self.sync_hands()
         return result
 
+    def get_valid_deploy_squares(self):
+        return self.state.get_valid_deploy_squares()
+
+    def place_unit(self, unit_cls, row, col):
+        unit = self.state.place_unit(unit_cls, row, col)
+        self.current_action_points = self.state.current_action_points
+        self.units = self.state.units
+        if unit:
+            print(f"Deployed {unit.unit_type} at ({row}, {col})")
+        self.sync_hands()
+        return unit
+
     def on_draw(self):
         arcade.Window.clear(self)
         for row in range(ROWS):
@@ -125,6 +139,8 @@ class GridsGame(arcade.Window):
                     color = arcade.color.DARK_GRAY
                 if (row, col) in self.move_squares:
                     color = arcade.color.LIGHT_BLUE
+                if (row, col) in self.deploy_squares:
+                    color = arcade.color.DARK_SPRING_GREEN
                 cell_rect = arcade.Rect(
                     left=x - CELL_SIZE/2,
                     right=x + CELL_SIZE/2,
@@ -136,7 +152,7 @@ class GridsGame(arcade.Window):
                     height=CELL_SIZE
                 )
                 arcade.draw_rect_outline(cell_rect, color, border_width=2)
-                if (row, col) in self.move_squares:
+                if (row, col) in self.move_squares or (row, col) in self.deploy_squares:
                     arcade.draw_rect_filled(cell_rect, color)
         for target in self.attack_targets:
             x = target.col * CELL_SIZE + CELL_SIZE / 2
@@ -270,8 +286,12 @@ class GridsGame(arcade.Window):
                     item = self.hand[idx]
                     if isinstance(item, Card):
                         print(f"Selected card: {item.name}")
+                        self.deploy_squares = []
+                        self.selected_unit_class = None
                     else:
                         print(f"Selected unit: {item.__name__}")
+                        self.selected_unit_class = item
+                        self.deploy_squares = self.get_valid_deploy_squares()
                     return
             return
 
@@ -280,7 +300,7 @@ class GridsGame(arcade.Window):
             row, col = cell
             print(f"Clicked on cell: ({row}, {col})")
 
-            # If a card is selected, play it on this target
+            # If a card is selected, play or deploy it on this target
             if self.selected_card_index is not None and self.selected_card_index < len(self.hand):
                 selected = self.hand[self.selected_card_index]
                 if isinstance(selected, Card):
@@ -292,6 +312,13 @@ class GridsGame(arcade.Window):
                     target = target_unit if target_unit else (row, col)
                     self.play_card(selected, target)
                     self.selected_card_index = None
+                    return
+                elif isinstance(selected, type) and issubclass(selected, Unit):
+                    if (row, col) in self.deploy_squares:
+                        self.place_unit(selected, row, col)
+                        self.selected_card_index = None
+                        self.deploy_squares = []
+                        self.selected_unit_class = None
                     return
 
             for unit in self.units:
@@ -322,6 +349,8 @@ class GridsGame(arcade.Window):
         else:
             self.selected_unit = None
             self.move_squares = []
+            self.deploy_squares = []
+            self.selected_unit_class = None
             
     def get_clicked_cell(self, x, y):
         if x < 0 or x >= GRID_WIDTH or y < 0 or y >= GRID_HEIGHT:
