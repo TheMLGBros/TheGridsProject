@@ -91,8 +91,9 @@ class GridsGame(arcade.Window):
     def init_board(self):
         self.state.init_board()
 
-    def draw_cards(self, deck, player, num=1):
-        self.state.draw_cards(deck, player, num)
+    def draw_cards(self, deck, player, num=1, ap_cost=0):
+        self.state.draw_cards(deck, player, num, ap_cost=ap_cost)
+        self.current_action_points = self.state.current_action_points
         self.sync_hands()
 
     def move_unit(self, unit, target_row, target_col):
@@ -281,10 +282,10 @@ class GridsGame(arcade.Window):
                 self.end_turn()
                 return
             if self.point_in_rect(x, y, self.draw_card_button):
-                self.draw_cards(self.spell_deck, self.current_player, num=1)
+                self.draw_cards(self.spell_deck, self.current_player, num=1, ap_cost=1)
                 return
             if self.point_in_rect(x, y, self.draw_unit_button):
-                self.draw_cards(self.unit_deck, self.current_player, num=1)
+                self.draw_cards(self.unit_deck, self.current_player, num=1, ap_cost=1)
                 return
             for idx, rect in enumerate(self.card_rects):
                 if self.point_in_rect(x, y, rect):
@@ -329,13 +330,7 @@ class GridsGame(arcade.Window):
 
             for unit in self.units:
                 if unit.row == row and unit.col == col:
-                    if unit.owner == self.current_player:
-                        self.selected_unit = unit
-                        self.move_squares = self.get_valid_move_squares(unit)
-                        self.attack_targets = self.get_attackable_units(unit)
-                        print("Selected unit:", unit.describe())
-                        return
-                    elif (
+                    if (
                         self.selected_unit
                         and unit in self.attack_targets
                         and self.selected_unit.owner == self.current_player
@@ -344,6 +339,12 @@ class GridsGame(arcade.Window):
                         self.attack_targets = []
                         self.move_squares = []
                         self.selected_unit = None
+                        return
+                    if unit.owner == self.current_player:
+                        self.selected_unit = unit
+                        self.move_squares = self.get_valid_move_squares(unit)
+                        self.attack_targets = self.get_attackable_units(unit)
+                        print("Selected unit:", unit.describe())
                         return
             if self.selected_unit and (row, col) in self.move_squares:
                 self.move_unit(self.selected_unit, row, col)
