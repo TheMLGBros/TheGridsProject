@@ -141,6 +141,8 @@ class GridsGame(arcade.Window):
                     color = arcade.color.LIGHT_BLUE
                 if (row, col) in self.deploy_squares:
                     color = arcade.color.DARK_SPRING_GREEN
+                if (row, col) in self.state.fires:
+                    color = arcade.color.ORANGE
                 cell_rect = arcade.Rect(
                     left=x - CELL_SIZE/2,
                     right=x + CELL_SIZE/2,
@@ -152,7 +154,11 @@ class GridsGame(arcade.Window):
                     height=CELL_SIZE
                 )
                 arcade.draw_rect_outline(cell_rect, color, border_width=2)
-                if (row, col) in self.move_squares or (row, col) in self.deploy_squares:
+                if (
+                    (row, col) in self.move_squares
+                    or (row, col) in self.deploy_squares
+                    or (row, col) in self.state.fires
+                ):
                     arcade.draw_rect_filled(cell_rect, color)
         for target in self.attack_targets:
             x = target.col * CELL_SIZE + CELL_SIZE / 2
@@ -374,7 +380,6 @@ class GridsGame(arcade.Window):
     def on_update(self, delta_time):
         for unit in self.state.units:
             unit.update_animation(delta_time)
-        self.state.update()
         self.player1BlockedTurnsTimer = self.state.player1BlockedTurnsTimer
         self.player2BlockedTurnsTimer = self.state.player2BlockedTurnsTimer
         self.current_action_points = self.state.current_action_points

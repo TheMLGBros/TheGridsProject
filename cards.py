@@ -1,5 +1,5 @@
 from units import Unit
-from constants import CELL_SIZE
+from constants import CELL_SIZE, ROWS, COLUMNS
 
 class Card:
     def __init__(self, name, cost, description):
@@ -17,10 +17,14 @@ class Fireball(Card):
 
     def play(self, game, target):
         if isinstance(target, Unit):
-            target.health -= 3
+            row, col = target.row, target.col
+            target.burn_turns = 2
+            target.health -= 15
             print(f"{target.unit_type} hit by Fireball! New health: {target.health}")
         else:
+            row, col = target
             print("Fireball played on grid cell", target)
+        game.fires[(row, col)] = 4
 
 class Freeze(Card):
     def __init__(self):
@@ -46,10 +50,29 @@ class MeteoriteStrike(Card):
 
     def play(self, game, target):
         print("Meteorite Strike at", target)
-        for unit in game.units:
-            if unit.row == target[0] and unit.col == target[1]:
+        row, col = target if not isinstance(target, Unit) else (target.row, target.col)
+        for unit in list(game.units):
+            if unit.row == row and unit.col == col:
                 unit.health -= 40
-                print(f"{unit.unit_type} took damage from Meteorite Strike, health is now {unit.health}.")
+                print(
+                    f"{unit.unit_type} took damage from Meteorite Strike, health is now {unit.health}."
+                )
+        # knock back adjacent units
+        offsets = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        for dr, dc in offsets:
+            ar, ac = row + dr, col + dc
+            for unit in game.units:
+                if unit.row == ar and unit.col == ac:
+                    dest_r, dest_c = ar + dr, ac + dc
+                    if 0 <= dest_r < ROWS and 0 <= dest_c < COLUMNS and not any(
+                        u.row == dest_r and u.col == dest_c for u in game.units
+                    ):
+                        unit.row = dest_r
+                        unit.col = dest_c
+                        unit.pixel_x = dest_c * CELL_SIZE + CELL_SIZE / 2
+                        unit.pixel_y = dest_r * CELL_SIZE + CELL_SIZE / 2
+                        unit.target_pixel_x = unit.pixel_x
+                        unit.target_pixel_y = unit.pixel_y
 
 class ActionBlock(Card):
     def __init__(self):
@@ -58,11 +81,11 @@ class ActionBlock(Card):
     def play(self, game, target):
         if isinstance(target, Unit):
             if target.owner == 1:
-                game.player1BlockedTurnsTimer = 3
-                print("player 1 actions are blocked for 3 turns.")
+                game.player1BlockedTurnsTimer = 2
+                print("player 1 actions are blocked for 2 turns.")
             else:
-                game.player2BlockedTurnsTimer = 3
-                print("player 2 actions are blocked for 3 turns.")
+                game.player2BlockedTurnsTimer = 2
+                print("player 2 actions are blocked for 2 turns.")
 
 
 class Teleport(Card):
