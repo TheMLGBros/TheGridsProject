@@ -32,6 +32,10 @@ class GameState:
         self.player2BlockedTurnsTimer = 0
         self.fires = {}
 
+        # None while the game is ongoing, otherwise set to the winning player's
+        # number (1 or 2).
+        self.winner = None
+
         # stateful selections used by some cards
         self.selected_unit = None
 
@@ -57,6 +61,29 @@ class GameState:
 
         # convenience references for the current player
         self.refresh_player_hands()
+
+    # ------------------------------------------------------------------
+    def check_winner(self):
+        """Update the winner attribute based on remaining commanders."""
+        p1_alive = any(
+            u.unit_type == "Commander" and u.owner == 1 for u in self.units
+        )
+        p2_alive = any(
+            u.unit_type == "Commander" and u.owner == 2 for u in self.units
+        )
+        if not p1_alive and not p2_alive:
+            self.winner = None
+        elif not p1_alive:
+            self.winner = 2
+        elif not p2_alive:
+            self.winner = 1
+        else:
+            self.winner = None
+
+    def remove_dead_units(self):
+        """Remove units with no health and check for a winner."""
+        self.units[:] = [u for u in self.units if u.health > 0]
+        self.check_winner()
 
     def refresh_player_hands(self):
         """Update convenience references for the current player."""
@@ -162,6 +189,9 @@ class GameState:
             return
         target.health -= attacker.attack
         if target.health <= 0:
+            # remove defeated unit immediately so its cell becomes free and
+            # check if the game has been won.
+            self.remove_dead_units()
             # remove defeated unit immediately so its cell becomes free
             self.units[:] = [u for u in self.units if u is not target]
             attacker.has_attacked = True
@@ -215,6 +245,8 @@ class GameState:
         if card in self.hands[player]:
             self.hands[player].remove(card)
         self.current_action_points -= card.cost
+        # cards may defeat units (including commanders)
+        self.remove_dead_units()
         self.refresh_player_hands()
         return True
 
@@ -298,4 +330,4 @@ class GameState:
         for pos in expired:
             del self.fires[pos]
         # modify the list in-place so external references remain valid
-        self.units[:] = [u for u in self.units if u.health > 0]
+        self.remove_dead_units()
