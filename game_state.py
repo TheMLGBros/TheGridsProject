@@ -39,25 +39,28 @@ class GameState:
         # stateful selections used by some cards
         self.selected_unit = None
 
-        self.unit_deck = [Warrior, Archer, Healer, Trebuchet, Viking]
-        self.spell_deck = [
-            Fireball(),
-            Freeze(),
-            StrengthUp(),
-            MeteoriteStrike(),
-            ActionBlock(),
-            Teleport(),
-        ]
+        # each player gets their own identical decks to ensure fairness
+        unit_types = [Warrior, Archer, Healer, Trebuchet, Viking]
+        spell_types = [Fireball, Freeze, StrengthUp, MeteoriteStrike, ActionBlock, Teleport]
+        self.unit_decks = {1: [], 2: []}
+        self.spell_decks = {1: [], 2: []}
+        for player in (1, 2):
+            for _ in range(2):  # two copies of each card/unit
+                self.unit_decks[player].extend(unit_types)
+                self.spell_decks[player].extend(card() for card in spell_types)
+            random.shuffle(self.unit_decks[player])
+            random.shuffle(self.spell_decks[player])
 
-        # hands are unique per player but share one combined list of units and spells
+        # each player maintains separate hands for units and spells
         self.hands = {1: [], 2: []}
         self.unit_hands = {1: [], 2: []}
         self.spell_hands = {1: [], 2: []}
 
         self.init_board()
-        # give the starting player an initial hand
-        self.draw_cards(self.spell_deck, self.current_player, num=3)
-        self.draw_cards(self.unit_deck, self.current_player, num=3)
+        # give each player an initial hand of three spell and three unit cards
+        for player in (1, 2):
+            self.draw_cards(self.spell_decks[player], player, num=3)
+            self.draw_cards(self.unit_decks[player], player, num=3)
 
         # convenience references for the current player
         self.refresh_player_hands()
@@ -91,14 +94,43 @@ class GameState:
         self.unit_hand = self.unit_hands[self.current_player]
         self.spell_hand = self.spell_hands[self.current_player]
 
+    # expose the current player's decks for compatibility with older code
+    @property
+    def unit_deck(self):
+        return self.unit_decks[self.current_player]
+
+    @property
+    def spell_deck(self):
+        return self.spell_decks[self.current_player]
+
     def init_board(self):
-        self.units.append(Unit(ROWS // 2, 0, "Commander", owner=1, health=300, attack=20, move_range=2, attack_range=1, cost=1))
-        self.units.append(Unit(ROWS // 2, COLUMNS - 1, "Commander", owner=2, health=20, attack=3, move_range=2, attack_range=1, cost=1))
-        self.units.append(Warrior(ROWS // 2, 1, owner=1))
-        self.units.append(Archer(ROWS // 2 - 1, 0, owner=1))
-        self.units.append(Healer(ROWS // 2 + 1, 0, owner=1))
-        self.units.append(Viking(ROWS // 2 + 1, COLUMNS - 1, owner=2))
-        self.units.append(Trebuchet(ROWS // 2 - 1, COLUMNS - 1, owner=2))
+        # start with only the two commanders on the board
+        self.units.append(
+            Unit(
+                ROWS // 2,
+                0,
+                "Commander",
+                owner=1,
+                health=300,
+                attack=20,
+                move_range=2,
+                attack_range=1,
+                cost=1,
+            )
+        )
+        self.units.append(
+            Unit(
+                ROWS // 2,
+                COLUMNS - 1,
+                "Commander",
+                owner=2,
+                health=300,
+                attack=20,
+                move_range=2,
+                attack_range=1,
+                cost=1,
+            )
+        )
 
     def draw_cards(self, deck, player, num=1, ap_cost=0):
         """Draw cards from a deck into the specified player's hand."""

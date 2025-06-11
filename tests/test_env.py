@@ -3,6 +3,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import gym
 from grids_env import GridsEnv
 from game_state import GameState
+from units import Warrior
 
 
 def test_deploy_action():
@@ -18,8 +19,9 @@ def test_deploy_action():
 
 def test_game_winner_set_on_commander_death():
     state = GameState()
-    attacker = next(u for u in state.units if u.owner == 1 and u.unit_type != "Commander")
     commander = next(u for u in state.units if u.owner == 2 and u.unit_type == "Commander")
+    attacker = Warrior(commander.row, commander.col - 1, owner=1)
+    state.units.append(attacker)
     commander.health = 1
     state.attack_unit(attacker, commander)
     assert state.winner == 1
@@ -27,8 +29,9 @@ def test_game_winner_set_on_commander_death():
 
 def test_env_terminates_when_commander_dies():
     env = GridsEnv()
-    attacker = next(u for u in env.state.units if u.owner == 1 and u.unit_type != "Commander")
     commander = next(u for u in env.state.units if u.owner == 2 and u.unit_type == "Commander")
+    attacker = Warrior(commander.row, commander.col - 1, owner=1)
+    env.state.units.append(attacker)
     commander.health = 1
     env.state.attack_unit(attacker, commander)
     obs, reward, term, trunc, _ = env.step((2, 0, 0, 0))
