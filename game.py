@@ -1,6 +1,5 @@
 import arcade
-import heapq
-import random
+from game_state import GameState
 
 from constants import (SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE, ROWS, COLUMNS,
                        CELL_SIZE, GRID_WIDTH, GRID_HEIGHT, UI_PANEL_WIDTH)
@@ -20,33 +19,22 @@ class GridsGame(arcade.Window):
         self.grid_origin_x = 0
         self.grid_origin_y = 0
 
-        self.units = []
-        self.obstacles = []
+        # game state containing units and rules
+        self.state = GameState()
 
-        self.current_action_points = 7
-        self.current_player = 1
-        self.player1BlockedTurnsTimer = 0
-        self.player2BlockedTurnsTimer = 0
+        # convenience references used by UI code
+        self.unit_deck = self.state.unit_deck
+        self.spell_deck = self.state.spell_deck
+        self.unit_hand = self.state.unit_hand
+        self.spell_hand = self.state.spell_hand
+        self.player1BlockedTurnsTimer = self.state.player1BlockedTurnsTimer
+        self.player2BlockedTurnsTimer = self.state.player2BlockedTurnsTimer
+        self.current_action_points = self.state.current_action_points
+        self.current_player = self.state.current_player
 
-        self.unit_deck = [
-            Warrior,
-            Archer,
-            Healer,
-            Trebuchet,
-            Viking,
-        ]
-        self.spell_deck = [
-            Fireball(),
-            Freeze(),
-            StrengthUp(),
-            MeteoriteStrike(),
-            ActionBlock(),
-            Teleport(),
-        ]
-        self.unit_hand = []
-        self.spell_hand = []
+        self.units = self.state.units
+        self.obstacles = self.state.obstacles
 
-        self.selected_unit = None
         self.selected_card_index = None
         self.move_squares = []
         self.attack_targets = []
@@ -73,9 +61,14 @@ class GridsGame(arcade.Window):
         self.card_rects = []
         self.unit_card_rects = []
 
-        self.init_board()
-        self.draw_cards(self.spell_deck, self.spell_hand, num=3)
-        self.draw_cards(self.unit_deck, self.unit_hand, num=3)
+    # expose selected_unit through the underlying game state
+    @property
+    def selected_unit(self):
+        return self.state.selected_unit
+
+    @selected_unit.setter
+    def selected_unit(self, value):
+        self.state.selected_unit = value
 
     def point_in_rect(self, x, y, rect):
         left = rect['center_x'] - rect['width'] / 2
@@ -85,67 +78,28 @@ class GridsGame(arcade.Window):
         return left <= x <= right and bottom <= y <= top
 
     def init_board(self):
-        self.units.append(Unit(ROWS // 2, 0, "Commander", owner=1, health=300, attack=20, move_range=2, attack_range=1, cost=1))
-        self.units.append(Unit(ROWS // 2, COLUMNS - 1, "Commander", owner=2, health=20, attack=3, move_range=2, attack_range=1, cost=1))
-        self.units.append(Warrior(ROWS // 2, 1, owner=1))
-        self.units.append(Archer(ROWS // 2 - 1, 0, owner=1))
-        self.units.append(Healer(ROWS // 2 + 1, 0, owner=1))
-        self.units.append(Viking(ROWS // 2 + 1, COLUMNS - 1, owner=2))
-        self.units.append(Trebuchet(ROWS // 2 - 1, COLUMNS - 1, owner=2))
+        self.state.init_board()
 
     def draw_cards(self, deck, hand, num=1):
-        for _ in range(num):
-            if deck:
-                card = deck.pop(0)
-                hand.append(card)
+        self.state.draw_cards(deck, hand, num)
 
     def move_unit(self, unit, target_row, target_col):
-        path = self.a_star_pathfinding((unit.row, unit.col), (target_row, target_col))
-        if not path or len(path) > unit.move_range:
-            print("Move not possible!")
-            return False
-
-        unit.start_move(path)
-        self.current_action_points -= 1
-        final_row, final_col = path[-1]
-        print(
-            f"{unit.unit_type} moved to ({final_row}, {final_col}). AP left: {self.current_action_points}"
-        )
-        return True
+        result = self.state.move_unit(unit, target_row, target_col, animate=True)
+        self.current_action_points = self.state.current_action_points
+        return result
 
     def attack_unit(self, attacker, target):
-        if target.health <= 0:
-            return
-        target.health -= attacker.attack
-        print(
-            f"{attacker.unit_type} attacked {target.unit_type} for {attacker.attack} damage. Target health: {target.health}"
-        )
-        # Knock back one square if possible
-        dr = target.row - attacker.row
-        dc = target.col - attacker.col
-        knock_row = target.row + (1 if dr > 0 else -1 if dr < 0 else 0)
-        knock_col = target.col + (1 if dc > 0 else -1 if dc < 0 else 0)
-        if 0 <= knock_row < ROWS and 0 <= knock_col < COLUMNS:
-            if not any(u.row == knock_row and u.col == knock_col for u in self.units):
-                target.start_move([(knock_row, knock_col)])
+        self.state.attack_unit(attacker, target)
 
     def end_turn(self):
-        print(f"Ending turn for Player {self.current_player}.")
-        self.current_action_points = 7
-        self.current_player = 2 if self.current_player == 1 else 1
-        self.draw_cards(self.spell_deck, self.spell_hand, num=1)
+        self.state.end_turn()
+        self.current_action_points = self.state.current_action_points
+        self.current_player = self.state.current_player
 
     def play_card(self, card, target):
-        if card in self.spell_hand:
-            if self.current_action_points < card.cost:
-                print("Not enough action points to play this card.")
-                return
-            card.play(self, target)
-            self.spell_hand.remove(card)
-            self.current_action_points -= card.cost
-            print(f"Played {card.name}. AP left: {self.current_action_points}")
-        else:
-            print("Card not in hand!")
+        result = self.state.play_card(card, target)
+        self.current_action_points = self.state.current_action_points
+        return result
 
     def on_draw(self):
         arcade.Window.clear(self)
@@ -385,68 +339,25 @@ class GridsGame(arcade.Window):
         return row, col
 
     def get_valid_move_squares(self, unit):
-        valid_moves = []
-        for row in range(ROWS):
-            for col in range(COLUMNS):
-                if (row, col) == (unit.row, unit.col):
-                    continue
-                path = self.a_star_pathfinding((unit.row, unit.col), (row, col))
-                if path and len(path) <= unit.move_range:
-                    valid_moves.append((row, col))
-        return valid_moves
+        return self.state.get_valid_move_squares(unit)
 
     def get_attackable_units(self, unit):
-        targets = []
-        for other in self.units:
-            if other.owner != unit.owner:
-                dist = self.manhattan_distance((unit.row, unit.col), (other.row, other.col))
-                if dist <= unit.attack_range:
-                    targets.append(other)
-        return targets
+        return self.state.get_attackable_units(unit)
 
     def a_star_pathfinding(self, start, goal):
-        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-        open_list = []
-        heapq.heappush(open_list, (0, start))
-        came_from = {}
-        g_score = {start: 0}
-        f_score = {start: self.manhattan_distance(start, goal)}
-        while open_list:
-            _, current = heapq.heappop(open_list)
-            if current == goal:
-                path = []
-                while current in came_from:
-                    path.append(current)
-                    current = came_from[current]
-                path.reverse()
-                return path
-            for dr, dc in directions:
-                neighbor = (current[0] + dr, current[1] + dc)
-                if not (0 <= neighbor[0] < ROWS and 0 <= neighbor[1] < COLUMNS):
-                    continue
-                if any(unit.row == neighbor[0] and unit.col == neighbor[1] for unit in self.units):
-                    continue
-                tentative_g_score = g_score[current] + 1
-                if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
-                    came_from[neighbor] = current
-                    g_score[neighbor] = tentative_g_score
-                    f_score[neighbor] = tentative_g_score + self.manhattan_distance(neighbor, goal)
-                    heapq.heappush(open_list, (f_score[neighbor], neighbor))
-        return []
+        return self.state.a_star_pathfinding(start, goal)
 
     def manhattan_distance(self, cell1, cell2):
-        return abs(cell1[0] - cell2[0]) + abs(cell1[1] - cell2[1])
+        return self.state.manhattan_distance(cell1, cell2)
 
     def on_update(self, delta_time):
-        for unit in self.units:
-            if unit.frozen_turns > 0:
-                unit.frozen_turns -= 1
+        for unit in self.state.units:
             unit.update_animation(delta_time)
-        if self.player1BlockedTurnsTimer > 0:
-            self.player1BlockedTurnsTimer -= 1
-        if self.player2BlockedTurnsTimer > 0:
-            self.player2BlockedTurnsTimer -= 1
-        self.units = [u for u in self.units if u.health > 0]
+        self.state.update()
+        self.player1BlockedTurnsTimer = self.state.player1BlockedTurnsTimer
+        self.player2BlockedTurnsTimer = self.state.player2BlockedTurnsTimer
+        self.current_action_points = self.state.current_action_points
+        self.current_player = self.state.current_player
 
 
 def main():
