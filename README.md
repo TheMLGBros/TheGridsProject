@@ -27,3 +27,16 @@ pytest
 ```
 
 This will execute all unit tests.
+
+## Self-Play Example
+
+The repository includes a simple `RandomAgent` and a `self_play.py` script
+demonstrating how two agents can interact with the `GridsEnv` environment.
+Run the script to watch a few turns of automated play:
+
+```bash
+python self_play.py
+```
+
+This uses purely random actions, but provides a starting point for more
+advanced reinforcement learning experiments.
