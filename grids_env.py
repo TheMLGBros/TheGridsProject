@@ -132,7 +132,13 @@ class GridsEnv(gym.Env):
             for r in range(ROWS):
                 for c in range(COLUMNS):
                     actions.append((2, idx, r, c))
-        actions.append((3, 0, 0, 0))
+
+        # Only allow ending the turn early if no other actions are available or
+        # the player has exhausted their action points. This encourages the AI
+        # to use all actions each turn.
+        if not actions or self.state.current_action_points <= 0:
+            actions.append((3, 0, 0, 0))
+
         return actions
 
     def render(self):
