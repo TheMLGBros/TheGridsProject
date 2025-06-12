@@ -9,7 +9,7 @@ from typing import List, Optional
 import numpy as np
 import matplotlib.pyplot as plt
 
-from grids_env import GridsEnv
+from grids_env import GridsEnv, UNIT_TYPES, SPELL_TYPES
 from dqn_agent import DQNAgent
 
 
@@ -26,6 +26,9 @@ def train(num_episodes: int = 600, max_steps: int = 115) -> None:
     agent1 = DQNAgent(env)
     agent2 = DQNAgent(env)
 
+    unit_usage = {cls.__name__: 0 for cls in UNIT_TYPES}
+    spell_usage = {cls.__name__: 0 for cls in SPELL_TYPES}
+
     episode_rewards: List[float] = []
     episode_lengths: List[int] = []
     winners: List[Optional[int]] = []
@@ -40,7 +43,11 @@ def train(num_episodes: int = 600, max_steps: int = 115) -> None:
             current = env.state.current_player
             agent = agent1 if current == 1 else agent2
             action = agent.select_action(obs)
-            next_obs, reward, term, trunc, _ = env.step(action)
+            next_obs, reward, term, trunc, info = env.step(action)
+            if "deployed_unit" in info:
+                unit_usage[info["deployed_unit"]] += 1
+            if "used_spell" in info:
+                spell_usage[info["used_spell"]] += 1
             agent.store(obs, action, reward, next_obs, term or trunc)
             agent.update()
             obs = next_obs
@@ -56,7 +63,11 @@ def train(num_episodes: int = 600, max_steps: int = 115) -> None:
 
         agent1.decay_epsilon()
         agent2.decay_epsilon()
-        print(f"Episode {ep+1}: reward={total_reward:.2f}")
+        if winner is None:
+            outcome = "Draw"
+        else:
+            outcome = f"Agent {winner} wins"
+        print(f"Episode {ep+1}: reward={total_reward:.2f} - {outcome}")
 
     # persist the learned policy for later use
     agent1.save("dqn_model.pth")
@@ -98,11 +109,19 @@ def train(num_episodes: int = 600, max_steps: int = 115) -> None:
     # Fun statistics
     highest_ep = int(np.argmax(episode_rewards)) + 1
     total_steps = sum(episode_lengths)
+    best_unit = max(unit_usage, key=unit_usage.get)
+    worst_unit = min(unit_usage, key=unit_usage.get)
+    best_item = max(spell_usage, key=spell_usage.get)
+    worst_item = min(spell_usage, key=spell_usage.get)
     fun_rows = [
         ["Episode with Highest Reward", highest_ep],
         ["Final Epsilon (Agent1)", f"{agent1.epsilon:.2f}"],
         ["Final Epsilon (Agent2)", f"{agent2.epsilon:.2f}"],
         ["Total Steps", total_steps],
+        ["Best Unit", best_unit],
+        ["Worst Unit", worst_unit],
+        ["Best Item", best_item],
+        ["Worst Item", worst_item],
     ]
     _print_table(fun_rows, "Fun Statistics")
 

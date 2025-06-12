@@ -93,6 +93,7 @@ class GridsEnv(gym.Env):
         return self._get_obs(), {}
 
     def step(self, action):
+        info = {}
         action_type, idx, row, col = action
         action_type = ActionType(action_type)
 
@@ -115,6 +116,7 @@ class GridsEnv(gym.Env):
             reward = 0.0 if unit else -1.0
             if unit:
                 reward += UNIT_DEPLOY_REWARD
+                info["deployed_unit"] = unit_cls.__name__
         elif action_type == ActionType.PLAY_CARD:
             if idx >= len(self.state.spell_hand):
                 return self._get_obs(), -1.0, True, False, {}
@@ -123,6 +125,7 @@ class GridsEnv(gym.Env):
             reward = 0.0 if ok else -1.0
             if ok:
                 reward += ITEM_USE_REWARD
+                info["used_spell"] = card.__class__.__name__
         elif action_type == ActionType.ATTACK:
             if idx >= len(self.state.units):
                 return self._get_obs(), -1.0, True, False, {}
@@ -167,7 +170,7 @@ class GridsEnv(gym.Env):
 
         terminated = self.state.winner is not None
         truncated = False
-        return self._get_obs(), reward, terminated, truncated, {}
+        return self._get_obs(), reward, terminated, truncated, info
 
     def valid_actions(self):
         actions = []
