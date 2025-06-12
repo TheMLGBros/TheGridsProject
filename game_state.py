@@ -297,14 +297,28 @@ class GameState:
 
     # ---------- Helpers ----------
     def get_valid_move_squares(self, unit):
+        """Return all squares the given ``unit`` can reach this turn."""
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        queue = [(unit.row, unit.col, 0)]
+        visited = {(unit.row, unit.col)}
         valid_moves = []
-        for row in range(ROWS):
-            for col in range(COLUMNS):
-                if (row, col) == (unit.row, unit.col):
+
+        while queue:
+            row, col, dist = queue.pop(0)
+            if dist >= unit.move_range:
+                continue
+            for dr, dc in directions:
+                nr, nc = row + dr, col + dc
+                if not (0 <= nr < ROWS and 0 <= nc < COLUMNS):
                     continue
-                path = self.a_star_pathfinding((unit.row, unit.col), (row, col))
-                if path and len(path) <= unit.move_range:
-                    valid_moves.append((row, col))
+                if (nr, nc) in visited:
+                    continue
+                if any(u.row == nr and u.col == nc for u in self.units):
+                    continue
+                visited.add((nr, nc))
+                valid_moves.append((nr, nc))
+                queue.append((nr, nc, dist + 1))
+
         return valid_moves
 
     def get_attackable_units(self, unit):
