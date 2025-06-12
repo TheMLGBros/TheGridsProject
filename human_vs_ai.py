@@ -25,6 +25,12 @@ class HumanVsAI(GridsGame):
     def on_update(self, delta_time):
         super().on_update(delta_time)
         if self.state.winner:
+            if not hasattr(self, "_winner_announced"):
+                if self.state.winner == self.ai_player:
+                    print("AI wins!")
+                else:
+                    print("You win!" if self.state.winner else "Draw")
+                self._winner_announced = True
             return
         if self.state.current_player != self.ai_player:
             return
