@@ -180,9 +180,15 @@ class GridsEnv(gym.Env):
             for r, c in self.state.get_valid_deploy_squares(player):
                 actions.append((1, idx, r, c))
         for idx, card in enumerate(self.state.spell_hands[player]):
-            for r in range(ROWS):
-                for c in range(COLUMNS):
-                    actions.append((2, idx, r, c))
+            target_cells = set()
+            for u in self.state.units:
+                for dr in (-1, 0, 1):
+                    for dc in (-1, 0, 1):
+                        r, c = u.row + dr, u.col + dc
+                        if 0 <= r < ROWS and 0 <= c < COLUMNS:
+                            target_cells.add((r, c))
+            for r, c in target_cells:
+                actions.append((2, idx, r, c))
 
         # drawing cards costs 1 action point and is only available when
         # the player has remaining AP and space in hand
