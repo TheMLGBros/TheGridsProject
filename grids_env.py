@@ -9,7 +9,8 @@ from units import Warrior, Archer, Healer, Trebuchet, Viking
 from cards import Fireball, Freeze, StrengthUp, MeteoriteStrike, ActionBlock, Teleport
 
 # Reward multiplier for damage dealt to the opposing commander.
-DAMAGE_REWARD_SCALE = 0.1
+# Increased to provide a greater incentive for targeting the enemy leader.
+DAMAGE_REWARD_SCALE = 0.2
 # Bonus reward when successfully deploying a unit.
 UNIT_DEPLOY_REWARD = 0.2
 # Bonus reward when successfully playing a card.
