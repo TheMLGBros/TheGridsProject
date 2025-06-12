@@ -41,7 +41,8 @@ class GameState:
 
         # each player gets their own identical decks to ensure fairness
         unit_types = [Warrior, Archer, Healer, Trebuchet, Viking]
-        spell_types = [Fireball, Freeze, StrengthUp, MeteoriteStrike, ActionBlock, Teleport]
+        # Temporarily exclude Teleport to simplify the learning task
+        spell_types = [Fireball, Freeze, StrengthUp, MeteoriteStrike, ActionBlock]
         self.unit_decks = {1: [], 2: []}
         self.spell_decks = {1: [], 2: []}
         for player in (1, 2):
