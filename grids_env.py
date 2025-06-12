@@ -10,7 +10,7 @@ from cards import Fireball, Freeze, StrengthUp, MeteoriteStrike, ActionBlock, Te
 
 # Reward multiplier for damage dealt to the opposing commander.
 # Increased to provide a greater incentive for targeting the enemy leader.
-DAMAGE_REWARD_SCALE = 0.2
+DAMAGE_REWARD_SCALE = 0.3
 # Bonus reward when successfully deploying a unit.
 UNIT_DEPLOY_REWARD = 0.2
 # Bonus reward when successfully playing a card.
