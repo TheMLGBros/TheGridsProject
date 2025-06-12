@@ -21,7 +21,7 @@ def _print_table(rows: List[List[str]], title: str) -> None:
         print(f"{name:<{col_width}}{value}")
 
 
-def train(num_episodes: int = 50, max_steps: int = 50) -> None:
+def train(num_episodes: int = 600, max_steps: int = 115) -> None:
     env = GridsEnv()
     agent1 = DQNAgent(env)
     agent2 = DQNAgent(env)
