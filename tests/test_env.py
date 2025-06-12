@@ -1,7 +1,7 @@
 import os, sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import gym
-from grids_env import GridsEnv, UNIT_DEPLOY_REWARD
+from grids_env import GridsEnv, UNIT_DEPLOY_REWARD, ATTACK_REWARD, DRAW_CARD_REWARD
 from game_state import GameState
 from units import Warrior
 
@@ -45,3 +45,28 @@ def test_play_card_action():
     action = (2, 0, 0, 0)
     obs, reward, term, trunc, _ = env.step(action)
     assert reward >= 1.0
+
+
+def test_attack_action():
+    env = GridsEnv()
+    # Replace initial units with two adjacent warriors for a deterministic test
+    attacker = Warrior(0, 0, owner=1)
+    target = Warrior(0, 1, owner=2)
+    env.state.units = [attacker, target]
+    env.state.current_player = 1
+    action = (4, 0, target.row, target.col)
+    obs, reward, term, trunc, _ = env.step(action)
+    assert reward == 1.0 + ATTACK_REWARD
+    assert target.health < target.max_health
+
+
+def test_draw_spell_action():
+    env = GridsEnv()
+    hand_before = len(env.state.spell_hand)
+    ap_before = env.state.current_action_points
+    action = (5, 0, 0, 0)
+    obs, reward, term, trunc, _ = env.step(action)
+    assert len(env.state.spell_hand) == hand_before + 1
+    assert env.state.current_action_points == ap_before - 1
+    assert reward == 1.0 + DRAW_CARD_REWARD
+
