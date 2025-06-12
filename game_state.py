@@ -223,6 +223,9 @@ class GameState:
             if attacker.owner == target.owner:
                 # Heal friendly target up to its maximum health
                 target.health = min(target.health + attacker.attack, target.max_health)
+                print(
+                    f"{attacker.unit_type} heals {target.unit_type}! {target.unit_type} health is now {target.health}."
+                )
                 return True
             else:
                 # Healers cannot damage enemies
@@ -231,6 +234,9 @@ class GameState:
         if target.health <= 0:
             return
         target.health -= attacker.attack
+        print(
+            f"{attacker.unit_type} attacks {target.unit_type}! {target.unit_type} health is now {target.health}."
+        )
         if target.health <= 0:
             # remove defeated unit immediately so its cell becomes free and
             # check if the game has been won.

@@ -24,7 +24,6 @@ class Fireball(Card):
             print(f"{target.unit_type} hit by Fireball! New health: {target.health}")
         else:
             row, col = target
-            print("Fireball played on grid cell", target)
         game.fires[(row, col)] = 4
 
 class Freeze(Card):
