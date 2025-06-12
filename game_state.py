@@ -215,6 +215,9 @@ class GameState:
         if attacker.frozen_turns > 0:
             return False
 
+        if attacker.unit_type == "Trebuchet" and attacker.has_attacked:
+            return False
+
 
         if target in attacker.attacked_targets:
             return False
@@ -233,7 +236,11 @@ class GameState:
               
         if target.health <= 0:
             return
-        target.health -= attacker.attack
+        dist = self.manhattan_distance((attacker.row, attacker.col), (target.row, target.col))
+        damage = attacker.attack
+        if attacker.unit_type == "Trebuchet" and dist == 1:
+            damage = attacker.attack // 2
+        target.health -= damage
         print(
             f"{attacker.unit_type} attacks {target.unit_type}! {target.unit_type} health is now {target.health}."
         )
@@ -329,6 +336,8 @@ class GameState:
         return valid_moves
 
     def get_attackable_units(self, unit):
+        if unit.unit_type == "Trebuchet" and unit.has_attacked:
+            return []
         targets = []
         for other in self.units:
             if unit.unit_type == "Healer":

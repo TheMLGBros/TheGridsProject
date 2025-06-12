@@ -13,7 +13,7 @@ from grids import (
     Teleport,
 )
 from game_state import GameState
-from units import Warrior, Healer
+from units import Warrior, Healer, Trebuchet
 
 @pytest.fixture
 def game():
@@ -169,3 +169,31 @@ def test_teleport_spell_no_selection(game):
         for u in game.units
     )
     assert game.current_action_points == starting_ap - teleport.cost
+
+
+def test_trebuchet_attacks_only_once_per_turn():
+    state = GameState()
+    state.units = []
+    treb = Trebuchet(0, 0, owner=1)
+    enemy1 = Warrior(0, 2, owner=2)
+    enemy2 = Warrior(0, 3, owner=2)
+    state.units = [treb, enemy1, enemy2]
+
+    assert state.attack_unit(treb, enemy1)
+    assert not state.attack_unit(treb, enemy2)
+
+    state.end_turn()
+    state.end_turn()
+
+    assert state.attack_unit(treb, enemy2)
+
+
+def test_trebuchet_adjacent_half_damage():
+    state = GameState()
+    state.units = []
+    treb = Trebuchet(0, 0, owner=1)
+    enemy = Warrior(0, 1, owner=2)
+    state.units = [treb, enemy]
+    before = enemy.health
+    state.attack_unit(treb, enemy)
+    assert before - enemy.health == treb.attack // 2
