@@ -134,7 +134,13 @@ class GameState:
         )
 
     def draw_cards(self, deck, player, num=1, ap_cost=0):
-        """Draw cards from a deck into the specified player's hand."""
+        """Draw cards from ``deck`` into ``player``'s hand.
+
+        Returns ``True`` if at least one card was drawn. ``ap_cost`` represents
+        the action point cost per card and will be subtracted when a card is
+        successfully drawn.
+        """
+        drawn = False
         hand = self.hands[player]
         for _ in range(num):
             if deck and len(hand) < HAND_CAPACITY:
@@ -148,6 +154,8 @@ class GameState:
                     self.unit_hands[player].append(card)
                 if ap_cost:
                     self.current_action_points -= ap_cost
+                drawn = True
+        return drawn
 
     def get_valid_deploy_squares(self, player=None):
         """Return free squares on the deployment column for the player."""
@@ -268,7 +276,7 @@ class GameState:
             self.current_action_points = 4
         else:
             self.current_action_points = 7
-        self.draw_cards(self.spell_deck, self.current_player, num=1)
+        # card drawing is now an explicit action rather than automatic
         self.refresh_player_hands()
 
     def play_card(self, card, target):

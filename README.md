@@ -42,12 +42,15 @@ This uses purely random actions, but provides a starting point for more
 advanced reinforcement learning experiments.
 
 Valid actions are represented as a tuple ``(action_type, index, row, col)``.
-The four action types are:
+The seven action types are:
 
 * ``0`` – move the unit at ``index`` in ``state.units`` to ``(row, col)``.
 * ``1`` – deploy the unit type at ``index`` from the player's hand onto the board.
 * ``2`` – play the spell card at ``index`` targeting ``(row, col)``.
 * ``3`` – end the current turn.
+* ``4`` – attack the unit at ``(row, col)`` with ``state.units[index]``.
+* ``5`` – draw a spell card from the deck (costs 1 action point).
+* ``6`` – draw a unit card from the deck (costs 1 action point).
 
 The environment's :meth:`valid_actions` method returns this list each step and
 the ``RandomAgent`` simply chooses from it at random.

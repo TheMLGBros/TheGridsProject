@@ -3,7 +3,7 @@ from gym import spaces
 import numpy as np
 
 from game_state import GameState
-from constants import ROWS, COLUMNS
+from constants import ROWS, COLUMNS, HAND_CAPACITY
 
 # Reward multiplier for damage dealt to the opposing commander.
 DAMAGE_REWARD_SCALE = 0.1
@@ -11,6 +11,10 @@ DAMAGE_REWARD_SCALE = 0.1
 UNIT_DEPLOY_REWARD = 0.2
 # Bonus reward when successfully playing a card.
 ITEM_USE_REWARD = 0.2
+# Bonus reward when successfully attacking an enemy unit.
+ATTACK_REWARD = 0.2
+# Bonus reward when drawing a card.
+DRAW_CARD_REWARD = 0.1
 
 class GridsEnv(gym.Env):
     """Gym-compatible environment wrapping :class:`GameState`."""
@@ -24,7 +28,7 @@ class GridsEnv(gym.Env):
         self.state = GameState()
         self.action_space = spaces.Tuple(
             (
-                spaces.Discrete(4),  # 0=move, 1=deploy, 2=play card, 3=end turn
+                spaces.Discrete(7),  # 0=move, 1=deploy, 2=play card, 3=end turn, 4=attack, 5=draw spell, 6=draw unit
                 spaces.Discrete(20),  # unit or hand index
                 spaces.Discrete(ROWS),
                 spaces.Discrete(COLUMNS),
@@ -98,6 +102,33 @@ class GridsEnv(gym.Env):
             reward = 1.0 if ok else -1.0
             if ok:
                 reward += ITEM_USE_REWARD
+        elif action_type == 4:  # attack unit
+            if idx >= len(self.state.units):
+                return self._get_obs(), -1.0, True, False, {}
+            attacker = self.state.units[idx]
+            target = next((u for u in self.state.units if u.row == row and u.col == col), None)
+            if target is None:
+                return self._get_obs(), -1.0, True, False, {}
+            ok = self.state.attack_unit(attacker, target)
+            reward = 1.0 if ok else -1.0
+            if ok:
+                reward += ATTACK_REWARD
+        elif action_type == 5:  # draw spell card
+            before = len(self.state.spell_hand)
+            ok = self.state.draw_cards(
+                self.state.spell_deck, self.state.current_player, num=1, ap_cost=1
+            )
+            reward = 1.0 if ok else -1.0
+            if ok and len(self.state.spell_hand) > before:
+                reward += DRAW_CARD_REWARD
+        elif action_type == 6:  # draw unit card
+            before = len(self.state.unit_hand)
+            ok = self.state.draw_cards(
+                self.state.unit_deck, self.state.current_player, num=1, ap_cost=1
+            )
+            reward = 1.0 if ok else -1.0
+            if ok and len(self.state.unit_hand) > before:
+                reward += DRAW_CARD_REWARD
         elif action_type == 3:  # end turn
             self.state.end_turn()
             reward = 0.0
@@ -125,6 +156,8 @@ class GridsEnv(gym.Env):
                 continue
             for r, c in self.state.get_valid_move_squares(unit):
                 actions.append((0, idx, r, c))
+            for target in self.state.get_attackable_units(unit):
+                actions.append((4, idx, target.row, target.col))
         for idx, unit_cls in enumerate(self.state.unit_hands[player]):
             for r, c in self.state.get_valid_deploy_squares(player):
                 actions.append((1, idx, r, c))
@@ -132,6 +165,21 @@ class GridsEnv(gym.Env):
             for r in range(ROWS):
                 for c in range(COLUMNS):
                     actions.append((2, idx, r, c))
+
+        # drawing cards costs 1 action point and is only available when
+        # the player has remaining AP and space in hand
+        if (
+            self.state.spell_decks[player]
+            and len(self.state.spell_hands[player]) < HAND_CAPACITY
+            and self.state.current_action_points > 0
+        ):
+            actions.append((5, 0, 0, 0))
+        if (
+            self.state.unit_decks[player]
+            and len(self.state.unit_hands[player]) < HAND_CAPACITY
+            and self.state.current_action_points > 0
+        ):
+            actions.append((6, 0, 0, 0))
 
         # Only allow ending the turn early if no other actions are available or
         # the player has exhausted their action points. This encourages the AI
