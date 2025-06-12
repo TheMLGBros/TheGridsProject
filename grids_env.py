@@ -104,7 +104,7 @@ class GridsEnv(gym.Env):
                 return self._get_obs(), -1.0, True, False, {}
             unit = self.state.units[idx]
             ok = self.state.move_unit(unit, row, col, animate=self.animate)
-            reward = 1.0 if ok else -1.0
+            reward = 0.0 if ok else -1.0
         elif action_type == ActionType.DEPLOY:
             if idx >= len(self.state.unit_hand):
                 return self._get_obs(), -1.0, True, False, {}
@@ -112,7 +112,7 @@ class GridsEnv(gym.Env):
             if (row, col) not in self.state.get_valid_deploy_squares():
                 return self._get_obs(), -1.0, True, False, {}
             unit = self.state.place_unit(unit_cls, row, col)
-            reward = 1.0 if unit else -1.0
+            reward = 0.0 if unit else -1.0
             if unit:
                 reward += UNIT_DEPLOY_REWARD
         elif action_type == ActionType.PLAY_CARD:
@@ -120,7 +120,7 @@ class GridsEnv(gym.Env):
                 return self._get_obs(), -1.0, True, False, {}
             card = self.state.spell_hand[idx]
             ok = self.state.play_card(card, (row, col))
-            reward = 1.0 if ok else -1.0
+            reward = 0.0 if ok else -1.0
             if ok:
                 reward += ITEM_USE_REWARD
         elif action_type == ActionType.ATTACK:
@@ -131,7 +131,7 @@ class GridsEnv(gym.Env):
             if target is None:
                 return self._get_obs(), -1.0, True, False, {}
             ok = self.state.attack_unit(attacker, target)
-            reward = 1.0 if ok else -1.0
+            reward = 0.0 if ok else -1.0
             if ok:
                 reward += ATTACK_REWARD
         elif action_type == ActionType.DRAW_SPELL:
@@ -139,7 +139,7 @@ class GridsEnv(gym.Env):
             ok = self.state.draw_cards(
                 self.state.spell_deck, self.state.current_player, num=1, ap_cost=1
             )
-            reward = 1.0 if ok else -1.0
+            reward = 0.0 if ok else -1.0
             if ok and len(self.state.spell_hand) > before:
                 reward += DRAW_CARD_REWARD
         elif action_type == ActionType.DRAW_UNIT:
@@ -147,7 +147,7 @@ class GridsEnv(gym.Env):
             ok = self.state.draw_cards(
                 self.state.unit_deck, self.state.current_player, num=1, ap_cost=1
             )
-            reward = 1.0 if ok else -1.0
+            reward = 0.0 if ok else -1.0
             if ok and len(self.state.unit_hand) > before:
                 reward += DRAW_CARD_REWARD
         elif action_type == ActionType.END_TURN:
