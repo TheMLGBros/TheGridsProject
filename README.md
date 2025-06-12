@@ -41,6 +41,17 @@ python self_play.py
 This uses purely random actions, but provides a starting point for more
 advanced reinforcement learning experiments.
 
+Valid actions are represented as a tuple ``(action_type, index, row, col)``.
+The four action types are:
+
+* ``0`` – move the unit at ``index`` in ``state.units`` to ``(row, col)``.
+* ``1`` – deploy the unit type at ``index`` from the player's hand onto the board.
+* ``2`` – play the spell card at ``index`` targeting ``(row, col)``.
+* ``3`` – end the current turn.
+
+The environment's :meth:`valid_actions` method returns this list each step and
+the ``RandomAgent`` simply chooses from it at random.
+
 ## DQN Training Example
 
 A simple Deep Q-Network agent and training script are included for
@@ -55,6 +66,14 @@ python train_dqn.py
 
 This implementation is intentionally lightweight and is aimed at CPU
 training on a laptop.
+
+During training each player is controlled by a separate ``DQNAgent``. The
+agent uses an \(epsilon\)-greedy policy to pick from the valid actions returned
+by the environment. Q-values are produced by a small feed-forward network with
+two fully connected layers of 128 units each. After every step the transition is
+stored in a replay buffer and the network is updated from a sampled batch. The
+exploration rate decays from 1.0 to 0.1 across training episodes. When training
+finishes the weights of ``agent1`` are saved to ``dqn_model.pth``.
 
 ## Watching AI vs AI With Graphics
 
