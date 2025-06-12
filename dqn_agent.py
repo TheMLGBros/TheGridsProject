@@ -129,11 +129,23 @@ class DQNAgent:
         states, actions, rewards, next_states, dones = self.sample()
         q_values = self.policy_net(states).gather(1, actions.view(-1, 1)).squeeze()
         with torch.no_grad():
-            next_q = self.target_net(next_states).max(1)[0]
+            # -------------------------------
+            # Double DQN target computation
+            # Use the policy network to select the best action for the next
+            # state and the target network to evaluate its value. This has
+            # been shown to reduce overestimation bias and leads to more
+            # stable learning.
+            next_actions = self.policy_net(next_states).argmax(1)
+            next_q = self.target_net(next_states).gather(
+                1, next_actions.view(-1, 1)
+            ).squeeze()
             target = rewards + self.gamma * next_q * (1 - dones)
         loss = F.mse_loss(q_values, target)
         self.optimizer.zero_grad()
         loss.backward()
+        # Gradient clipping helps prevent very large updates which can
+        # destabilize training in noisy environments.
+        torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), 1.0)
         self.optimizer.step()
 
         if self.steps_done % self.target_update == 0:
