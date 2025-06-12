@@ -23,6 +23,12 @@ class AIVsAI(GridsGame):
     def on_update(self, delta_time):
         super().on_update(delta_time)
         if self.state.winner:
+            if not hasattr(self, "_winner_announced"):
+                if self.state.winner:
+                    print(f"Player {self.state.winner} wins!")
+                else:
+                    print("Draw")
+                self._winner_announced = True
             return
         if time.time() - self.last_step < self.step_delay:
             return
