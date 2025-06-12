@@ -92,3 +92,15 @@ python ai_vs_ai.py
 By default random agents are used. If you have a saved model from training,
 replace them in the script with `DQNAgent` instances and call `load` with the
 path to the weight file.
+
+## Playing Against the AI
+
+To challenge a computer controlled opponent while you take the other side,
+run the `human_vs_ai.py` script:
+
+```bash
+python human_vs_ai.py
+```
+
+The default opponent is a simple `RandomAgent`, but you can swap in a
+`DQNAgent` in the file to play against a trained model.
