@@ -10,8 +10,10 @@ import torch.nn.functional as F
 from grids_env import GridsEnv
 from constants import ROWS, COLUMNS
 
-# Size of the discrete action space
-ACTION_SIZE = 3 * 20 * ROWS * COLUMNS
+# Size of the discrete action space. There are four action types
+# (move, deploy, play card, end turn) so the action space must account
+# for all of them.
+ACTION_SIZE = 4 * 20 * ROWS * COLUMNS
 
 
 def action_to_index(action: Tuple[int, int, int, int]) -> int:
