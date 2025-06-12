@@ -1,7 +1,13 @@
 import os, sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import gym
-from grids_env import GridsEnv, UNIT_DEPLOY_REWARD, ATTACK_REWARD, DRAW_CARD_REWARD
+from grids_env import (
+    GridsEnv,
+    UNIT_DEPLOY_REWARD,
+    ATTACK_REWARD,
+    DRAW_CARD_REWARD,
+    ITEM_USE_REWARD,
+)
 from actions import ActionType
 from game_state import GameState
 from units import Warrior
@@ -21,7 +27,7 @@ def test_deploy_action():
     square = env.state.get_valid_deploy_squares()[0]
     action = (ActionType.DEPLOY, 0, square[0], square[1])
     obs, reward, term, trunc, _ = env.step(action)
-    assert reward == 1.0 + UNIT_DEPLOY_REWARD
+    assert reward == UNIT_DEPLOY_REWARD
     assert any(u.row == square[0] and u.col == square[1] for u in env.state.units)
     assert not term and not trunc
 
@@ -53,7 +59,7 @@ def test_play_card_action():
     assert env.state.spell_hand
     action = (ActionType.PLAY_CARD, 0, 0, 0)
     obs, reward, term, trunc, _ = env.step(action)
-    assert reward >= 1.0
+    assert reward >= ITEM_USE_REWARD
 
 
 def test_attack_action():
@@ -65,7 +71,7 @@ def test_attack_action():
     env.state.current_player = 1
     action = (ActionType.ATTACK, 0, target.row, target.col)
     obs, reward, term, trunc, _ = env.step(action)
-    assert reward == 1.0 + ATTACK_REWARD
+    assert reward == ATTACK_REWARD
     assert target.health < target.max_health
 
 
@@ -77,5 +83,5 @@ def test_draw_spell_action():
     obs, reward, term, trunc, _ = env.step(action)
     assert len(env.state.spell_hand) == hand_before + 1
     assert env.state.current_action_points == ap_before - 1
-    assert reward == 1.0 + DRAW_CARD_REWARD
+    assert reward == DRAW_CARD_REWARD
 
