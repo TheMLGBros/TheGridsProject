@@ -12,6 +12,8 @@ class HumanVsAI(GridsGame):
     def __init__(self, agent, ai_player: int = 2, step_delay: float = 0.5):
         self.env = GridsEnv(animate=True)
         self.agent = agent
+        if hasattr(self.agent, "env"):
+            self.agent.env = self.env
         self.ai_player = ai_player
         self.step_delay = step_delay
         super().__init__()
@@ -48,7 +50,10 @@ class HumanVsAI(GridsGame):
 
 
 def main():
-    agent = RandomAgent()
+    # Use the trained model when available.
+    agent = DQNAgent(GridsEnv())
+    agent.load("dqn_model.pth")
+    agent.epsilon = 0.0
     window = HumanVsAI(agent)
     arcade.run()
 

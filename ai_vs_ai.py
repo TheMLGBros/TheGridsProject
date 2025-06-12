@@ -11,6 +11,10 @@ class AIVsAI(GridsGame):
         self.env = GridsEnv(animate=True)
         self.agent1 = agent1
         self.agent2 = agent2
+        if hasattr(self.agent1, "env"):
+            self.agent1.env = self.env
+        if hasattr(self.agent2, "env"):
+            self.agent2.env = self.env
         self.step_delay = step_delay
         super().__init__()
         # replace the state created by ``GridsGame`` with the environment state
@@ -46,11 +50,13 @@ class AIVsAI(GridsGame):
 
 
 def main():
-    # Start with two random agents. Trained models can be loaded by
-    # replacing the agents below with ``DQNAgent`` instances and calling
-    # ``load`` with a saved weight file.
-    agent1 = RandomAgent()
-    agent2 = RandomAgent()
+    # Load the trained model for both players by default.
+    agent1 = DQNAgent(GridsEnv())
+    agent1.load("dqn_model.pth")
+    agent1.epsilon = 0.0
+    agent2 = DQNAgent(GridsEnv())
+    agent2.load("dqn_model.pth")
+    agent2.epsilon = 0.0
     window = AIVsAI(agent1, agent2)
     arcade.run()
 
