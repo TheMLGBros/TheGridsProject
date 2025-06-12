@@ -152,3 +152,20 @@ def test_healer_heals_friendly_and_not_enemy():
     prev = enemy.health
     state.attack_unit(healer, enemy)
     assert enemy.health == prev
+
+
+def test_teleport_spell_no_selection(game):
+    teleport = Teleport()
+    game.spell_hand.append(teleport)
+    dest = (0, COLUMNS - 2)
+    assert all(
+        not (u.row == dest[0] and u.col == dest[1]) for u in game.units
+    )
+    starting_ap = game.current_action_points
+    # intentionally do not set game.selected_unit
+    game.play_card(teleport, dest)
+    assert any(
+        u.owner == game.current_player and u.row == dest[0] and u.col == dest[1]
+        for u in game.units
+    )
+    assert game.current_action_points == starting_ap - teleport.cost

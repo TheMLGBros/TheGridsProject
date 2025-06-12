@@ -1,3 +1,4 @@
+import random
 from units import Unit
 from constants import CELL_SIZE, ROWS, COLUMNS
 
@@ -99,8 +100,12 @@ class Teleport(Card):
     def play(self, game, target):
         unit = game.selected_unit
         if not unit or unit.owner != game.current_player:
-            print("No friendly unit selected for teleport.")
-            return
+            # If no unit is selected (e.g. AI usage), pick a random friendly unit
+            friendly = [u for u in game.units if u.owner == game.current_player]
+            if not friendly:
+                print("No friendly unit available for teleport.")
+                return
+            unit = random.choice(friendly)
 
         if isinstance(target, Unit):
             dest_row, dest_col = target.row, target.col
