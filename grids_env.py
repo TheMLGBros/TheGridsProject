@@ -3,6 +3,7 @@ from gym import spaces
 import numpy as np
 
 from game_state import GameState
+from actions import ActionType
 from constants import ROWS, COLUMNS, HAND_CAPACITY
 from units import Warrior, Archer, Healer, Trebuchet, Viking
 from cards import Fireball, Freeze, StrengthUp, MeteoriteStrike, ActionBlock, Teleport
@@ -36,7 +37,7 @@ class GridsEnv(gym.Env):
         self.state = GameState()
         self.action_space = spaces.Tuple(
             (
-                spaces.Discrete(7),  # 0=move, 1=deploy, 2=play card, 3=end turn, 4=attack, 5=draw spell, 6=draw unit
+                spaces.Discrete(len(ActionType)),  # action type
                 spaces.Discrete(20),  # unit or hand index
                 spaces.Discrete(ROWS),
                 spaces.Discrete(COLUMNS),
@@ -92,17 +93,18 @@ class GridsEnv(gym.Env):
 
     def step(self, action):
         action_type, idx, row, col = action
+        action_type = ActionType(action_type)
 
         opponent = 2 if self.state.current_player == 1 else 1
         pre_health = self._commander_health(opponent)
 
-        if action_type == 0:  # move existing unit
+        if action_type == ActionType.MOVE:
             if idx >= len(self.state.units):
                 return self._get_obs(), -1.0, True, False, {}
             unit = self.state.units[idx]
             ok = self.state.move_unit(unit, row, col, animate=self.animate)
             reward = 1.0 if ok else -1.0
-        elif action_type == 1:  # deploy unit from hand
+        elif action_type == ActionType.DEPLOY:
             if idx >= len(self.state.unit_hand):
                 return self._get_obs(), -1.0, True, False, {}
             unit_cls = self.state.unit_hand[idx]
@@ -112,7 +114,7 @@ class GridsEnv(gym.Env):
             reward = 1.0 if unit else -1.0
             if unit:
                 reward += UNIT_DEPLOY_REWARD
-        elif action_type == 2:  # play card from hand
+        elif action_type == ActionType.PLAY_CARD:
             if idx >= len(self.state.spell_hand):
                 return self._get_obs(), -1.0, True, False, {}
             card = self.state.spell_hand[idx]
@@ -120,7 +122,7 @@ class GridsEnv(gym.Env):
             reward = 1.0 if ok else -1.0
             if ok:
                 reward += ITEM_USE_REWARD
-        elif action_type == 4:  # attack unit
+        elif action_type == ActionType.ATTACK:
             if idx >= len(self.state.units):
                 return self._get_obs(), -1.0, True, False, {}
             attacker = self.state.units[idx]
@@ -131,7 +133,7 @@ class GridsEnv(gym.Env):
             reward = 1.0 if ok else -1.0
             if ok:
                 reward += ATTACK_REWARD
-        elif action_type == 5:  # draw spell card
+        elif action_type == ActionType.DRAW_SPELL:
             before = len(self.state.spell_hand)
             ok = self.state.draw_cards(
                 self.state.spell_deck, self.state.current_player, num=1, ap_cost=1
@@ -139,7 +141,7 @@ class GridsEnv(gym.Env):
             reward = 1.0 if ok else -1.0
             if ok and len(self.state.spell_hand) > before:
                 reward += DRAW_CARD_REWARD
-        elif action_type == 6:  # draw unit card
+        elif action_type == ActionType.DRAW_UNIT:
             before = len(self.state.unit_hand)
             ok = self.state.draw_cards(
                 self.state.unit_deck, self.state.current_player, num=1, ap_cost=1
@@ -147,7 +149,7 @@ class GridsEnv(gym.Env):
             reward = 1.0 if ok else -1.0
             if ok and len(self.state.unit_hand) > before:
                 reward += DRAW_CARD_REWARD
-        elif action_type == 3:  # end turn
+        elif action_type == ActionType.END_TURN:
             self.state.end_turn()
             reward = 0.0
         else:
@@ -173,12 +175,12 @@ class GridsEnv(gym.Env):
             if unit.owner != player:
                 continue
             for r, c in self.state.get_valid_move_squares(unit):
-                actions.append((0, idx, r, c))
+                actions.append((ActionType.MOVE, idx, r, c))
             for target in self.state.get_attackable_units(unit):
-                actions.append((4, idx, target.row, target.col))
+                actions.append((ActionType.ATTACK, idx, target.row, target.col))
         for idx, unit_cls in enumerate(self.state.unit_hands[player]):
             for r, c in self.state.get_valid_deploy_squares(player):
-                actions.append((1, idx, r, c))
+                actions.append((ActionType.DEPLOY, idx, r, c))
         for idx, card in enumerate(self.state.spell_hands[player]):
             target_cells = set()
             for u in self.state.units:
@@ -188,7 +190,7 @@ class GridsEnv(gym.Env):
                         if 0 <= r < ROWS and 0 <= c < COLUMNS:
                             target_cells.add((r, c))
             for r, c in target_cells:
-                actions.append((2, idx, r, c))
+                actions.append((ActionType.PLAY_CARD, idx, r, c))
 
         # drawing cards costs 1 action point and is only available when
         # the player has remaining AP and space in hand
@@ -197,19 +199,19 @@ class GridsEnv(gym.Env):
             and len(self.state.spell_hands[player]) < HAND_CAPACITY
             and self.state.current_action_points > 0
         ):
-            actions.append((5, 0, 0, 0))
+            actions.append((ActionType.DRAW_SPELL, 0, 0, 0))
         if (
             self.state.unit_decks[player]
             and len(self.state.unit_hands[player]) < HAND_CAPACITY
             and self.state.current_action_points > 0
         ):
-            actions.append((6, 0, 0, 0))
+            actions.append((ActionType.DRAW_UNIT, 0, 0, 0))
 
         # Only allow ending the turn early if no other actions are available or
         # the player has exhausted their action points. This encourages the AI
         # to use all actions each turn.
         if not actions or self.state.current_action_points <= 0:
-            actions.append((3, 0, 0, 0))
+            actions.append((ActionType.END_TURN, 0, 0, 0))
 
         return actions
 
