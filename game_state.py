@@ -238,12 +238,32 @@ class GameState:
             return
         dist = self.manhattan_distance((attacker.row, attacker.col), (target.row, target.col))
         damage = attacker.attack
-        if attacker.unit_type == "Trebuchet" and dist == 1:
-            damage = attacker.attack // 2
+        adjacency_damaged = []
+        if attacker.unit_type == "Trebuchet":
+            if dist == 1:
+                damage = attacker.attack // 2
+            # deal splash damage to units adjacent to the target
+            offsets = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+            for dr, dc in offsets:
+                ar, ac = target.row + dr, target.col + dc
+                for unit in self.units:
+                    if unit is target or unit is attacker:
+                        continue
+                    if unit.row == ar and unit.col == ac:
+                        unit.health -= attacker.attack // 2
+                        adjacency_damaged.append(unit)
         target.health -= damage
-        print(
-            f"{attacker.unit_type} attacks {target.unit_type}! {target.unit_type} health is now {target.health}."
-        )
+        if attacker.unit_type == "Trebuchet" and adjacency_damaged:
+            adj_info = ", ".join(
+                f"{u.unit_type} (now {u.health})" for u in adjacency_damaged
+            )
+            print(
+                f"{attacker.unit_type} attacks {target.unit_type}! {target.unit_type} health is now {target.health}. Adjacent units damaged: {adj_info}."
+            )
+        else:
+            print(
+                f"{attacker.unit_type} attacks {target.unit_type}! {target.unit_type} health is now {target.health}."
+            )
         if target.health <= 0:
             # remove defeated unit immediately so its cell becomes free and
             # check if the game has been won.
@@ -253,6 +273,9 @@ class GameState:
             attacker.has_attacked = True
             attacker.attacked_targets.add(target)
             return True
+
+        # remove any units defeated by splash damage
+        self.remove_dead_units()
 
         dr = target.row - attacker.row
         dc = target.col - attacker.col
