@@ -34,9 +34,18 @@ def index_to_action(index: int) -> Tuple[int, int, int, int]:
 def obs_to_tensor(obs: dict) -> torch.Tensor:
     arr = np.concatenate(
         [
-            np.array([obs["current_player"], obs["action_points"], obs["opponent_hand"]], dtype=np.float32),
+            np.array(
+                [
+                    obs["current_player"],
+                    obs["action_points"],
+                    obs["opponent_hand"],
+                ],
+                dtype=np.float32,
+            ),
             obs["board_owner"].astype(np.float32).flatten(),
             obs["board_health"].astype(np.float32).flatten(),
+            obs["unit_hand"].astype(np.float32).flatten(),
+            obs["spell_hand"].astype(np.float32).flatten(),
         ]
     )
     return torch.from_numpy(arr)

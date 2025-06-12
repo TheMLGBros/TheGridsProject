@@ -4,6 +4,8 @@ import numpy as np
 
 from game_state import GameState
 from constants import ROWS, COLUMNS, HAND_CAPACITY
+from units import Warrior, Archer, Healer, Trebuchet, Viking
+from cards import Fireball, Freeze, StrengthUp, MeteoriteStrike, ActionBlock, Teleport
 
 # Reward multiplier for damage dealt to the opposing commander.
 DAMAGE_REWARD_SCALE = 0.1
@@ -15,6 +17,12 @@ ITEM_USE_REWARD = 0.2
 ATTACK_REWARD = 0.2
 # Bonus reward when drawing a card.
 DRAW_CARD_REWARD = 0.1
+
+# Map unit and spell types to integer IDs for observation encoding.
+UNIT_TYPES = [Warrior, Archer, Healer, Trebuchet, Viking]
+UNIT_TYPE_TO_ID = {cls: i + 1 for i, cls in enumerate(UNIT_TYPES)}
+SPELL_TYPES = [Fireball, Freeze, StrengthUp, MeteoriteStrike, ActionBlock, Teleport]
+SPELL_TYPE_TO_ID = {cls: i + 1 for i, cls in enumerate(SPELL_TYPES)}
 
 class GridsEnv(gym.Env):
     """Gym-compatible environment wrapping :class:`GameState`."""
@@ -41,6 +49,8 @@ class GridsEnv(gym.Env):
                 "board_owner": spaces.Box(0, 2, (ROWS, COLUMNS), dtype=np.int8),
                 "board_health": spaces.Box(0, 500, (ROWS, COLUMNS), dtype=np.int16),
                 "opponent_hand": spaces.Discrete(11),
+                "unit_hand": spaces.MultiDiscrete([len(UNIT_TYPES) + 1] * HAND_CAPACITY),
+                "spell_hand": spaces.MultiDiscrete([len(SPELL_TYPES) + 1] * HAND_CAPACITY),
             }
         )
 
@@ -52,12 +62,20 @@ class GridsEnv(gym.Env):
             board_owner[unit.row, unit.col] = unit.owner
             board_health[unit.row, unit.col] = unit.health
         opponent = 2 if self.state.current_player == 1 else 1
+        unit_hand = np.zeros(HAND_CAPACITY, dtype=np.int8)
+        for i, unit_cls in enumerate(self.state.unit_hand[:HAND_CAPACITY]):
+            unit_hand[i] = UNIT_TYPE_TO_ID.get(unit_cls, 0)
+        spell_hand = np.zeros(HAND_CAPACITY, dtype=np.int8)
+        for i, card in enumerate(self.state.spell_hand[:HAND_CAPACITY]):
+            spell_hand[i] = SPELL_TYPE_TO_ID.get(card.__class__, 0)
         return {
             "current_player": self.state.current_player,
             "action_points": self.state.current_action_points,
             "board_owner": board_owner,
             "board_health": board_health,
             "opponent_hand": len(self.state.hands[opponent]),
+            "unit_hand": unit_hand,
+            "spell_hand": spell_hand,
         }
 
     def _commander_health(self, player: int) -> int:

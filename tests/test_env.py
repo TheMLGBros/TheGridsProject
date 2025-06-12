@@ -6,6 +6,14 @@ from game_state import GameState
 from units import Warrior
 
 
+def test_observation_contains_hand_info():
+    env = GridsEnv()
+    obs, _ = env.reset()
+    assert "unit_hand" in obs and "spell_hand" in obs
+    assert len(obs["unit_hand"]) == 10
+    assert len(obs["spell_hand"]) == 10
+
+
 def test_deploy_action():
     env = GridsEnv()
     assert env.state.unit_hand
