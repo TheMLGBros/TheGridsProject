@@ -2,6 +2,7 @@ import os, sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import gym
 from grids_env import GridsEnv, UNIT_DEPLOY_REWARD, ATTACK_REWARD, DRAW_CARD_REWARD
+from actions import ActionType
 from game_state import GameState
 from units import Warrior
 
@@ -18,7 +19,7 @@ def test_deploy_action():
     env = GridsEnv()
     assert env.state.unit_hand
     square = env.state.get_valid_deploy_squares()[0]
-    action = (1, 0, square[0], square[1])
+    action = (ActionType.DEPLOY, 0, square[0], square[1])
     obs, reward, term, trunc, _ = env.step(action)
     assert reward == 1.0 + UNIT_DEPLOY_REWARD
     assert any(u.row == square[0] and u.col == square[1] for u in env.state.units)
@@ -42,7 +43,7 @@ def test_env_terminates_when_commander_dies():
     env.state.units.append(attacker)
     commander.health = 1
     env.state.attack_unit(attacker, commander)
-    obs, reward, term, trunc, _ = env.step((3, 0, 0, 0))
+    obs, reward, term, trunc, _ = env.step((ActionType.END_TURN, 0, 0, 0))
     assert term
     assert env.state.winner == 1
 
@@ -50,7 +51,7 @@ def test_env_terminates_when_commander_dies():
 def test_play_card_action():
     env = GridsEnv()
     assert env.state.spell_hand
-    action = (2, 0, 0, 0)
+    action = (ActionType.PLAY_CARD, 0, 0, 0)
     obs, reward, term, trunc, _ = env.step(action)
     assert reward >= 1.0
 
@@ -62,7 +63,7 @@ def test_attack_action():
     target = Warrior(0, 1, owner=2)
     env.state.units = [attacker, target]
     env.state.current_player = 1
-    action = (4, 0, target.row, target.col)
+    action = (ActionType.ATTACK, 0, target.row, target.col)
     obs, reward, term, trunc, _ = env.step(action)
     assert reward == 1.0 + ATTACK_REWARD
     assert target.health < target.max_health
@@ -72,7 +73,7 @@ def test_draw_spell_action():
     env = GridsEnv()
     hand_before = len(env.state.spell_hand)
     ap_before = env.state.current_action_points
-    action = (5, 0, 0, 0)
+    action = (ActionType.DRAW_SPELL, 0, 0, 0)
     obs, reward, term, trunc, _ = env.step(action)
     assert len(env.state.spell_hand) == hand_before + 1
     assert env.state.current_action_points == ap_before - 1

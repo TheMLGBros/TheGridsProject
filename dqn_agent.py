@@ -8,16 +8,19 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from grids_env import GridsEnv
+from actions import ActionType
 from constants import ROWS, COLUMNS
 
 # Size of the discrete action space. There are seven action types
 # (move, deploy, play card, end turn, attack, draw spell, draw unit) so the action space must account
 # for all of them.
-ACTION_SIZE = 7 * 20 * ROWS * COLUMNS
+# The action space includes one dimension for the ``ActionType`` enum
+ACTION_SIZE = len(ActionType) * 20 * ROWS * COLUMNS
 
 
 def action_to_index(action: Tuple[int, int, int, int]) -> int:
     atype, idx, row, col = action
+    atype = int(atype)
     return ((atype * 20 + idx) * ROWS + row) * COLUMNS + col
 
 
@@ -28,7 +31,7 @@ def index_to_action(index: int) -> Tuple[int, int, int, int]:
     index //= ROWS
     idx = index % 20
     atype = index // 20
-    return atype, idx, row, col
+    return ActionType(atype), idx, row, col
 
 
 def obs_to_tensor(obs: dict) -> torch.Tensor:

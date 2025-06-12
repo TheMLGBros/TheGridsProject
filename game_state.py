@@ -1,5 +1,6 @@
 # Game state logic for grids environment
 import heapq
+from collections import deque
 import random
 from constants import ROWS, COLUMNS, CELL_SIZE, HAND_CAPACITY
 from units import (
@@ -299,12 +300,12 @@ class GameState:
     def get_valid_move_squares(self, unit):
         """Return all squares the given ``unit`` can reach this turn."""
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-        queue = [(unit.row, unit.col, 0)]
+        queue = deque([(unit.row, unit.col, 0)])
         visited = {(unit.row, unit.col)}
         valid_moves = []
 
         while queue:
-            row, col, dist = queue.pop(0)
+            row, col, dist = queue.popleft()
             if dist >= unit.move_range:
                 continue
             for dr, dc in directions:
