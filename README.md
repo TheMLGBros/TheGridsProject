@@ -76,7 +76,9 @@ by the environment. Q-values are produced by a small feed-forward network with
 two fully connected layers of 128 units each. After every step the transition is
 stored in a replay buffer and the network is updated from a sampled batch. The
 exploration rate decays from 1.0 to 0.1 across training episodes. When training
-finishes the weights of ``agent1`` are saved to ``dqn_model.pth``.
+finishes the weights of ``agent1`` are saved to ``dqn_model.pth``. Once the loop
+completes the script generates ``training_progress.png`` showing rewards per
+episode and prints summary tables with useful and fun statistics.
 
 ## Watching AI vs AI With Graphics
 
