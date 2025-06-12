@@ -75,6 +75,16 @@ class DQNAgent:
         self.target_update = target_update
         self.steps_done = 0
 
+    def save(self, path: str) -> None:
+        """Persist the agent's policy network to disk."""
+        torch.save(self.policy_net.state_dict(), path)
+
+    def load(self, path: str) -> None:
+        """Load network weights from ``path`` into the policy and target nets."""
+        state_dict = torch.load(path, map_location="cpu")
+        self.policy_net.load_state_dict(state_dict)
+        self.target_net.load_state_dict(state_dict)
+
     def select_action(self, obs: dict) -> Tuple[int, int, int, int]:
         valid_actions = self.env.valid_actions()
         if random.random() < self.epsilon:

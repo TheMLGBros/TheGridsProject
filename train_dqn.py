@@ -26,6 +26,10 @@ def train(num_episodes: int = 50, max_steps: int = 50):
         agent2.decay_epsilon()
         print(f"Episode {ep+1}: reward={total_reward:.2f}")
 
+    # persist the learned policy for later use
+    agent1.save("dqn_model.pth")
+    print("Model saved to dqn_model.pth")
+
 
 if __name__ == "__main__":
     train()
