@@ -1,7 +1,7 @@
 import os, sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import gym
-from grids_env import GridsEnv
+from grids_env import GridsEnv, UNIT_DEPLOY_REWARD
 from game_state import GameState
 from units import Warrior
 
@@ -12,7 +12,7 @@ def test_deploy_action():
     square = env.state.get_valid_deploy_squares()[0]
     action = (1, 0, square[0], square[1])
     obs, reward, term, trunc, _ = env.step(action)
-    assert reward == 1.0
+    assert reward == 1.0 + UNIT_DEPLOY_REWARD
     assert any(u.row == square[0] and u.col == square[1] for u in env.state.units)
     assert not term and not trunc
 
@@ -34,6 +34,14 @@ def test_env_terminates_when_commander_dies():
     env.state.units.append(attacker)
     commander.health = 1
     env.state.attack_unit(attacker, commander)
-    obs, reward, term, trunc, _ = env.step((2, 0, 0, 0))
+    obs, reward, term, trunc, _ = env.step((3, 0, 0, 0))
     assert term
     assert env.state.winner == 1
+
+
+def test_play_card_action():
+    env = GridsEnv()
+    assert env.state.spell_hand
+    action = (2, 0, 0, 0)
+    obs, reward, term, trunc, _ = env.step(action)
+    assert reward >= 1.0
