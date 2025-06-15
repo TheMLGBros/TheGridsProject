@@ -44,6 +44,9 @@ class HumanVsAI(GridsGame):
         else:
             action = self.agent.act(self.env)
         self.env.step(action)
+        # refresh UI state so action points and player display correctly
+        self.current_action_points = self.state.current_action_points
+        self.current_player = self.state.current_player
         self.units = self.state.units
         self.sync_hands()
         self.last_step = time.time()

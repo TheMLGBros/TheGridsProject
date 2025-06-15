@@ -44,6 +44,10 @@ class AIVsAI(GridsGame):
         else:
             action = agent.act(self.env)
         self.env.step(action)
+        # keep UI state in sync with the underlying environment after the
+        # action is executed
+        self.current_action_points = self.state.current_action_points
+        self.current_player = self.state.current_player
         self.last_step = time.time()
         self.units = self.state.units
         self.sync_hands()
