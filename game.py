@@ -100,7 +100,9 @@ class GridsGame(arcade.Window):
         return result
 
     def attack_unit(self, attacker, target):
-        self.state.attack_unit(attacker, target)
+        target_row, target_col = target.row, target.col
+        if self.state.attack_unit(attacker, target):
+            attacker.start_attack(target_row, target_col)
 
     def end_turn(self):
         self.state.end_turn()

@@ -1,8 +1,25 @@
 import arcade
 import math
+import struct
+from pathlib import Path
 
 from constants import CELL_SIZE
 from entities import GameEntity
+
+
+def get_png_size(path):
+    with open(path, "rb") as image_file:
+        header = image_file.read(24)
+    if header[:8] != b"\x89PNG\r\n\x1a\n":
+        return 1536, 1536
+    return struct.unpack(">II", header[16:24])
+
+
+def load_texture_if_available(path):
+    if hasattr(arcade, "load_texture"):
+        return arcade.load_texture(path)
+    return path
+
 
 class Unit(GameEntity):
     SPRITE_PATHS = {
@@ -16,11 +33,9 @@ class Unit(GameEntity):
     def __init__(self, row, col, unit_type, owner, health, attack, move_range, attack_range, cost, deploy_cost=1):
         color = arcade.color.BLUE if owner == 1 else arcade.color.RED
         sprite_path = self.SPRITE_PATHS.get(unit_type, "sprites/units/commander.png")
-        # Original unit artwork is extremely large (1024x1536 pixels). Scaling
-        # based on the larger dimension ensures the sprite fits inside a single
-        # grid cell regardless of the cell size. 1536 corresponds to the
-        # original sprite height.
-        sprite = arcade.Sprite(sprite_path, scale=CELL_SIZE / 1536)
+        sprite_width, sprite_height = get_png_size(sprite_path)
+        scale = (CELL_SIZE * 0.92) / max(sprite_width, sprite_height)
+        sprite = arcade.Sprite(sprite_path, scale=scale)
         sprite.color = color
         super().__init__(row, col, sprite)
         self.unit_type = unit_type
@@ -50,6 +65,23 @@ class Unit(GameEntity):
         self.start_pixel_y = self.pixel_y
         self.animation_timer = 0.0
         self.move_queue = []
+        self.idle_texture = getattr(sprite, "texture", load_texture_if_available(sprite_path))
+        self.attack_textures = self._load_attack_textures(unit_type)
+        self.attack_timer = 0.0
+        self.attack_duration = 0.32
+        self.attack_target_vector = (0, 0)
+        self.attack_offset_x = 0.0
+        self.attack_offset_y = 0.0
+
+    def _load_attack_textures(self, unit_type):
+        unit_key = unit_type.lower().replace(" ", "_")
+        frames = []
+        for index in range(4):
+            path = Path("sprites") / "units" / "attacks" / f"{unit_key}_attack_{index}.png"
+            if not path.exists():
+                return []
+            frames.append(load_texture_if_available(str(path)))
+        return frames
 
     def describe(self):
         """Return a human-readable summary of the unit's key stats."""
@@ -61,8 +93,8 @@ class Unit(GameEntity):
 
     def draw(self):
         """Render the unit sprite."""
-        self.sprite.center_x = self.pixel_x
-        self.sprite.center_y = self.pixel_y
+        self.sprite.center_x = self.pixel_x + self.attack_offset_x
+        self.sprite.center_y = self.pixel_y + self.attack_offset_y
         arcade.draw_sprite(self.sprite)
         if self.frozen_turns > 0:
             arcade.draw_text(
@@ -99,6 +131,17 @@ class Unit(GameEntity):
         self.target_pixel_y = next_row * CELL_SIZE + CELL_SIZE / 2
         self.animation_timer = 0.0
 
+    def start_attack(self, target_row, target_col):
+        """Play a short attack animation facing the target cell."""
+        if not self.attack_textures:
+            return
+        dx = target_col - self.col
+        dy = target_row - self.row
+        length = max(math.hypot(dx, dy), 1)
+        self.attack_target_vector = (dx / length, dy / length)
+        self.attack_timer = self.attack_duration
+        self.sprite.texture = self.attack_textures[0]
+
     def update_animation(self, delta_time):
         if self.pixel_x != self.target_pixel_x or self.pixel_y != self.target_pixel_y:
             self.animation_timer += delta_time
@@ -113,8 +156,24 @@ class Unit(GameEntity):
                 self.col = int(self.target_pixel_x // CELL_SIZE)
                 if self.move_queue:
                     self._begin_next_step()
-        self.sprite.center_x = self.pixel_x
-        self.sprite.center_y = self.pixel_y
+        if self.attack_timer > 0:
+            elapsed = self.attack_duration - self.attack_timer
+            progress = min(elapsed / self.attack_duration, 1.0)
+            frame_index = min(
+                int(progress * len(self.attack_textures)),
+                len(self.attack_textures) - 1,
+            )
+            self.sprite.texture = self.attack_textures[frame_index]
+            lunge = math.sin(progress * math.pi) * 12
+            self.attack_offset_x = self.attack_target_vector[0] * lunge
+            self.attack_offset_y = self.attack_target_vector[1] * lunge
+            self.attack_timer = max(0.0, self.attack_timer - delta_time)
+            if self.attack_timer == 0:
+                self.sprite.texture = self.idle_texture
+                self.attack_offset_x = 0.0
+                self.attack_offset_y = 0.0
+        self.sprite.center_x = self.pixel_x + self.attack_offset_x
+        self.sprite.center_y = self.pixel_y + self.attack_offset_y
 
 class Warrior(Unit):
     def __init__(self, row, col, owner):
