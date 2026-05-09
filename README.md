@@ -104,3 +104,17 @@ python human_vs_ai.py
 
 The script automatically loads the weights in `dqn_model.pth` so you can play
 against the latest trained model without editing any code.
+
+## Hexagonal Safari Browser Version
+
+A lightweight browser-playable hexagonal version is available at `web/index.html`.
+
+To run locally:
+
+```bash
+python -m http.server 8000
+```
+
+Then open `http://localhost:8000/web/index.html` in Safari (or any modern browser).
+
+This version uses a hex grid with simple turn-based movement and is implemented in plain Canvas/JavaScript for Safari compatibility.
