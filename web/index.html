@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Grids - Hex (Safari)</title>
+  <style>
+    body { margin:0; font-family: Arial,sans-serif; background:#101820; color:#fff; display:flex; gap:16px; padding:16px; }
+    #panel { width: 280px; }
+    button { width:100%; margin-top:8px; padding:10px; }
+    canvas { background:#1d2c3b; border:1px solid #445; }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="900" height="700"></canvas>
+  <div id="panel">
+    <h2>Hex Grids</h2>
+    <p id="status"></p>
+    <button id="endTurn">End Turn</button>
+    <p>Click your unit, then click a highlighted hex to move.</p>
+  </div>
+<script>
+(function () {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const statusEl = document.getElementById('status');
+  const rows = 7, cols = 10, size = 34;
+  const originX = 70, originY = 70;
+  let currentPlayer = 1;
+  let selected = null;
+  const units = [
+    {q:0, r:3, owner:1, hp:10, name:'Commander'},
+    {q:9, r:3, owner:2, hp:10, name:'Commander'}
+  ];
+
+  function hexToPixel(q, r) {
+    const x = originX + size * Math.sqrt(3) * (q + r/2);
+    const y = originY + size * 1.5 * r;
+    return {x,y};
+  }
+  function polygon(x,y,s){
+    const pts=[];
+    for(let i=0;i<6;i++){
+      const a = Math.PI/180*(60*i-30);
+      pts.push({x:x+s*Math.cos(a), y:y+s*Math.sin(a)});
+    }
+    return pts;
+  }
+  function drawHex(q,r,fill,stroke){
+    const p=hexToPixel(q,r), pts=polygon(p.x,p.y,size-1);
+    ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+    for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
+    ctx.closePath();
+    ctx.fillStyle=fill; ctx.fill(); ctx.strokeStyle=stroke; ctx.stroke();
+  }
+  function neighbors(q,r){ return [[1,0],[-1,0],[0,1],[0,-1],[1,-1],[-1,1]].map(d=>({q:q+d[0],r:r+d[1]})).filter(n=>n.q>=0&&n.q<cols&&n.r>=0&&n.r<rows); }
+  function unitAt(q,r){ return units.find(u=>u.q===q&&u.r===r); }
+  function legalMoves(u){ return neighbors(u.q,u.r).filter(n=>!unitAt(n.q,n.r)); }
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for(let r=0;r<rows;r++) for(let q=0;q<cols;q++){
+      let fill = (q===0||q===cols-1)?'#3c4d61':'#2a3b4f';
+      if(selected && legalMoves(selected).some(m=>m.q===q&&m.r===r)) fill='#2d6a8a';
+      drawHex(q,r,fill,'#90a4b7');
+    }
+    units.forEach(u=>{
+      const p=hexToPixel(u.q,u.r);
+      ctx.beginPath(); ctx.arc(p.x,p.y,size*0.45,0,Math.PI*2);
+      ctx.fillStyle=u.owner===1?'#3ac57a':'#db5f6f'; ctx.fill();
+      ctx.fillStyle='#fff'; ctx.font='12px Arial'; ctx.textAlign='center';
+      ctx.fillText(u.name[0],p.x,p.y+4);
+    });
+    statusEl.textContent = `Player ${currentPlayer}'s turn`;
+  }
+  function pickHex(x,y){
+    let best=null, dist=Infinity;
+    for(let r=0;r<rows;r++) for(let q=0;q<cols;q++){
+      const p=hexToPixel(q,r), d=Math.hypot(p.x-x,p.y-y);
+      if(d<dist){dist=d;best={q,r};}
+    }
+    return dist < size ? best : null;
+  }
+  canvas.addEventListener('click', e=>{
+    const rect=canvas.getBoundingClientRect();
+    const h=pickHex(e.clientX-rect.left,e.clientY-rect.top);
+    if(!h) return;
+    const u=unitAt(h.q,h.r);
+    if(u && u.owner===currentPlayer){ selected=u; draw(); return; }
+    if(selected && legalMoves(selected).some(m=>m.q===h.q&&m.r===h.r)){
+      selected.q=h.q; selected.r=h.r; selected=null; draw();
+    }
+  });
+  document.getElementById('endTurn').addEventListener('click',()=>{ currentPlayer=currentPlayer===1?2:1; selected=null; draw(); });
+  draw();
+})();
+</script>
+</body>
+</html>
